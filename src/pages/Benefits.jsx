@@ -99,7 +99,7 @@ const Benefits = () => {
 
   const fetchBenefits = async () => {
     try {
-      const response = await axios.get("http://localhost:8055/benefits");
+      const response = await axios.get("https://backendhr4.onrender.com/benefits");
       setBenefits(response.data);
     } catch (error) {
       console.error("Error fetching benefits:", error);
@@ -121,7 +121,7 @@ const Benefits = () => {
     if (editIndex !== null) {
       try {
         await axios.put(
-          `http://localhost:8055/benefits/${benefits[editIndex]._id}`,
+          `https://backendhr4.onrender.com/benefits/${benefits[editIndex]._id}`,
           benefitData
         );
         const updatedBenefits = [...benefits];
@@ -139,7 +139,7 @@ const Benefits = () => {
     } else {
       try {
         const response = await axios.post(
-          "http://localhost:8055/benefits",
+          "https://backendhr4.onrender.com/benefits",
           benefitData
         );
         setBenefits([...benefits, response.data]);
@@ -175,7 +175,7 @@ const Benefits = () => {
     
     try {
       await axios.delete(
-        `http://localhost:8055/benefits/${benefits[index]._id}`
+        `https://backendhr4.onrender.com/benefits/${benefits[index]._id}`
       );
       const updatedBenefits = benefits.filter((_, i) => i !== index);
       setBenefits(updatedBenefits);

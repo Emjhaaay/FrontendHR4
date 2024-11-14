@@ -25,7 +25,7 @@ function Signup() {
     setErrorMessage("");
 
     try {
-      const response = await axios.post("http://localhost:8055/register", {
+      const response = await axios.post("https://backendhr4.onrender.com/register", {
         name,
         email,
         password,

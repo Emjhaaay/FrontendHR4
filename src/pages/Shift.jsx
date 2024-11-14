@@ -40,7 +40,7 @@ const Shift = () => {
   useEffect(() => {
     const fetchShifts = async () => {
       try {
-        const response = await axios.get("http://localhost:8055/shifts");
+        const response = await axios.get("https://backendhr4.onrender.com/shifts");
         setShifts(response.data);
       } catch (error) {
         console.error("Error fetching shifts:", error);
@@ -64,13 +64,13 @@ const Shift = () => {
 
     try {
       if (editIndex !== null) {
-        await axios.put(`http://localhost:8055/shifts/${editId}`, newShift);
+        await axios.put(`https://backendhr4.onrender.com/shifts/${editId}`, newShift);
         const updatedShifts = shifts.map((shift, index) => (index === editIndex ? { ...shift, ...newShift } : shift));
         setShifts(updatedShifts);
         showNotification("success", "Employee's Shift updated successfully!");
         resetForm();
       } else {
-        const response = await axios.post("http://localhost:8055/shifts", newShift);
+        const response = await axios.post("https://backendhr4.onrender.com/shifts", newShift);
         setShifts([...shifts, response.data]);
         showNotification("success", "Employee's Shift added successfully!");
         resetForm();
@@ -114,7 +114,7 @@ const Shift = () => {
 
     const shiftToDelete = shifts[index];
     try {
-      await axios.delete(`http://localhost:8055/shifts/${shiftToDelete._id}`);
+      await axios.delete(`https://backendhr4.onrender.com/shifts/${shiftToDelete._id}`);
       const updatedShifts = shifts.filter((_, i) => i !== index);
       setShifts(updatedShifts);
       showNotification("success", "Employee's Shift deleted successfully!");

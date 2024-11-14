@@ -73,7 +73,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchShiftCounts = async () => {
       try {
-        const response = await fetch("http://localhost:8055/shifts");
+        const response = await fetch("https://backendhr4.onrender.com/shifts");
         const data = await response.json();
         const counts = data.reduce((acc, shift) => {
           const { shiftType } = shift;
@@ -88,7 +88,7 @@ const Dashboard = () => {
 
     const fetchLeaveCounts = async () => {
       try {
-        const response = await fetch("http://localhost:8055/leaves");
+        const response = await fetch("https://backendhr4.onrender.com/leaves");
         const data = await response.json();
         const counts = data.reduce((acc, leave) => {
           const { status } = leave;
@@ -103,7 +103,7 @@ const Dashboard = () => {
 
     const fetchOvertimeData = async () => {
       try {
-        const response = await fetch("http://localhost:8055/overtimes");
+        const response = await fetch("https://backendhr4.onrender.com/overtimes");
         const data = await response.json();
         const sortedData = data
           .sort((a, b) => b.overtimeHours - a.overtimeHours)
@@ -123,7 +123,7 @@ const Dashboard = () => {
 
     const fetchBenefitsData = async () => {
       try {
-        const response = await fetch("http://localhost:8055/benefits");
+        const response = await fetch("https://backendhr4.onrender.com/benefits");
         const data = await response.json();
 
         // Extracting the required benefit values
@@ -157,7 +157,7 @@ const Dashboard = () => {
     // New function to fetch incentives data
     const fetchIncentivesData = async () => {
       try {
-        const response = await fetch("http://localhost:8055/incentives");
+        const response = await fetch("https://backendhr4.onrender.com/incentives");
         const data = await response.json();
 
         // Extracting names and incentives for the ratings graph

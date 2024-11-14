@@ -62,7 +62,7 @@ const OvertimeManagement = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get("http://localhost:8055/overtimes");
+      const response = await axios.get("https://backendhr4.onrender.com/overtimes");
       setEmployees(response.data);
       const historicalData = response.data; // Assume historical data is here
       const predictedOvertime = predictOvertime(historicalData);
@@ -87,7 +87,7 @@ const OvertimeManagement = () => {
     try {
       if (isEditing) {
         await axios.put(
-          `http://localhost:8055/overtimes/${employees[currentIndex]._id}`,
+          `https://backendhr4.onrender.com/overtimes/${employees[currentIndex]._id}`,
           {
             name,
             position,
@@ -102,7 +102,7 @@ const OvertimeManagement = () => {
           show: true,
         });
       } else {
-        await axios.post("http://localhost:8055/overtimes", {
+        await axios.post("https://backendhr4.onrender.com/overtimes", {
           name,
           position,
           baseSalary,
@@ -155,7 +155,7 @@ const OvertimeManagement = () => {
     }
     try {
       await axios.delete(
-        `http://localhost:8055/overtimes/${employees[index]._id}`
+        `https://backendhr4.onrender.com/overtimes/${employees[index]._id}`
       );
       fetchEmployees();
       setNotification({
