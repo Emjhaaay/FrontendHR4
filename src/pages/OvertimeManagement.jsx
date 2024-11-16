@@ -62,7 +62,7 @@ const OvertimeManagement = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get("https://backendhr4.onrender.com/overtimes");
+      const response = await axios.get("https://backend-hr-4.vercel.app/overtimes");
       setEmployees(response.data);
       const historicalData = response.data; // Assume historical data is here
       const predictedOvertime = predictOvertime(historicalData);
@@ -87,7 +87,7 @@ const OvertimeManagement = () => {
     try {
       if (isEditing) {
         await axios.put(
-          `https://backendhr4.onrender.com/overtimes/${employees[currentIndex]._id}`,
+          `https://backend-hr-4.vercel.app/overtimes/${employees[currentIndex]._id}`,
           {
             name,
             position,
@@ -102,7 +102,7 @@ const OvertimeManagement = () => {
           show: true,
         });
       } else {
-        await axios.post("https://backendhr4.onrender.com/overtimes", {
+        await axios.post("https://backend-hr-4.vercel.app/overtimes", {
           name,
           position,
           baseSalary,
@@ -155,7 +155,7 @@ const OvertimeManagement = () => {
     }
     try {
       await axios.delete(
-        `https://backendhr4.onrender.com/overtimes/${employees[index]._id}`
+        `https://backend-hr-4.vercel.app/overtimes/${employees[index]._id}`
       );
       fetchEmployees();
       setNotification({

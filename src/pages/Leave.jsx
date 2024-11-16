@@ -37,7 +37,7 @@ const Leave = () => {
   useEffect(() => {
     const fetchLeaves = async () => {
       try {
-        const response = await axios.get("https://backendhr4.onrender.com/leaves");
+        const response = await axios.get("https://backend-hr-4.vercel.app/leaves");
         setLeaves(response.data);
         setFilteredLeaves(response.data); // Initialize filtered leaves
       } catch (error) {
@@ -72,7 +72,7 @@ const Leave = () => {
     e.preventDefault();
     try {
       if (editingId) {
-        await axios.put(`https://backendhr4.onrender.com/leaves/${editingId}`, form);
+        await axios.put(`https://backend-hr-4.vercel.app/leaves/${editingId}`, form);
         setLeaves((prev) =>
           prev.map((leave) =>
             leave._id === editingId ? { ...form, _id: editingId } : leave
@@ -89,7 +89,7 @@ const Leave = () => {
         });
         setEditingId(null);
       } else {
-        const response = await axios.post("https://backendhr4.onrender.com/leaves", form);
+        const response = await axios.post("https://backend-hr-4.vercel.app/leaves", form);
         setLeaves([...leaves, { ...form, _id: response.data._id }]);
         setFilteredLeaves([...leaves, { ...form, _id: response.data._id }]); // For new data addition
         setNotification({
@@ -124,7 +124,7 @@ const Leave = () => {
       return; // If the user cancels, exit the function
     }
     try {
-      await axios.delete(`https://backendhr4.onrender.com/leaves/${_id}`);
+      await axios.delete(`https://backend-hr-4.vercel.app/leaves/${_id}`);
       setLeaves(leaves.filter((leave) => leave._id !== _id));
       setFilteredLeaves(filteredLeaves.filter((leave) => leave._id !== _id)); // Update filtered list
       setNotification({

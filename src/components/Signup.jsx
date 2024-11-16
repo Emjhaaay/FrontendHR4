@@ -25,7 +25,7 @@ function Signup() {
     setErrorMessage("");
 
     try {
-      const response = await axios.post("https://backendhr4.onrender.com/register", {
+      const response = await axios.post("https://backend-hr-4.vercel.app/register", {
         name,
         email,
         password,

@@ -99,7 +99,7 @@ const Benefits = () => {
 
   const fetchBenefits = async () => {
     try {
-      const response = await axios.get("https://backendhr4.onrender.com/benefits");
+      const response = await axios.get("https://backend-hr-4.vercel.app/benefits");
       setBenefits(response.data);
     } catch (error) {
       console.error("Error fetching benefits:", error);
@@ -121,7 +121,7 @@ const Benefits = () => {
     if (editIndex !== null) {
       try {
         await axios.put(
-          `https://backendhr4.onrender.com/benefits/${benefits[editIndex]._id}`,
+          `https://backend-hr-4.vercel.app/benefits/${benefits[editIndex]._id}`,
           benefitData
         );
         const updatedBenefits = [...benefits];
@@ -139,7 +139,7 @@ const Benefits = () => {
     } else {
       try {
         const response = await axios.post(
-          "https://backendhr4.onrender.com/benefits",
+          "https://backend-hr-4.vercel.app/benefits",
           benefitData
         );
         setBenefits([...benefits, response.data]);
@@ -175,7 +175,7 @@ const Benefits = () => {
     
     try {
       await axios.delete(
-        `https://backendhr4.onrender.com/benefits/${benefits[index]._id}`
+        `https://backend-hr-4.vercel.app/benefits/${benefits[index]._id}`
       );
       const updatedBenefits = benefits.filter((_, i) => i !== index);
       setBenefits(updatedBenefits);

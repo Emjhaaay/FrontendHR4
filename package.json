@@ -1,6 +1,6 @@
 {
   "name": "client",
-  "private": true,
+  "homepage": "https://hr4.nodadogenhospital.com/",
   "version": "0.0.0",
   "type": "module",
   "scripts": {

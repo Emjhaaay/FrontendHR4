@@ -45,7 +45,7 @@ const Incentives = () => {
 
   const fetchIncentives = async () => {
     try {
-      const response = await axios.get("https://backendhr4.onrender.com/incentives");
+      const response = await axios.get("https://backend-hr-4.vercel.app/incentives");
       if (response.data.length === 0) {
         console.log("No employee data available");
       }
@@ -113,7 +113,7 @@ const Incentives = () => {
         // Update existing employee
         const updatedEmployee = { ...formData, totalSalary };
         await axios.put(
-          `https://backendhr4.onrender.com/incentives/${employees[editIndex]._id}`,
+          `https://backend-hr-4.vercel.app/incentives/${employees[editIndex]._id}`,
           updatedEmployee
         );
         const updatedEmployees = [...employees];
@@ -128,7 +128,7 @@ const Incentives = () => {
         // Create new employee
         const newEmployee = { ...formData, totalSalary };
         const response = await axios.post(
-          "https://backendhr4.onrender.com/incentives",
+          "https://backend-hr-4.vercel.app/incentives",
           newEmployee
         );
         setEmployees((prevEmployees) => [...prevEmployees, response.data]);
@@ -151,7 +151,7 @@ const Incentives = () => {
     }
     try {
       await axios.delete(
-        `https://backendhr4.onrender.com/incentives/${employees[index]._id}`
+        `https://backend-hr-4.vercel.app/incentives/${employees[index]._id}`
       );
       setEmployees((prevEmployees) =>
         prevEmployees.filter((_, i) => i !== index)
