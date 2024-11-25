@@ -159,17 +159,7 @@ function Login({ onLogin }) {
             {loading ? "Loading..." : "Login"}
           </button>
         </form>
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?
-            <Link
-              to="/register"
-              className="ml-2 font-medium text-blue-900 hover:text-[#090367]"
-            >
-              Sign Up
-            </Link>
-          </p>
-        </div>
+        
       </div>
     </div>
   );
