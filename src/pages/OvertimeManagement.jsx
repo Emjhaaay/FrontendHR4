@@ -3,6 +3,8 @@ import { FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit"; // Import icons
 import axios from "axios";
+import Modal from "@mui/material/Modal"; // Import Modal
+import Box from "@mui/material/Box"; // Import Box
 import "/src/index.css";
 
 const OvertimeManagement = () => {
@@ -21,8 +23,13 @@ const OvertimeManagement = () => {
     message: "",
     type: "",
     show: false,
-  }); // Updated to include show
+  });
   const [searchQuery, setSearchQuery] = useState(""); // State for search query
+
+  // Modal states
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
 
   const positions = [
     { position: "Doctor", baseSalary: 70000 },
@@ -39,7 +46,6 @@ const OvertimeManagement = () => {
   };
 
   const predictOvertime = (historicalData) => {
-    // Simple predictive model based on average historical overtime hours
     if (historicalData.length === 0) return 0;
     const totalOvertime = historicalData.reduce(
       (sum, entry) => sum + entry.overtimeHours,
@@ -62,7 +68,7 @@ const OvertimeManagement = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get("https://backend-hr-4.vercel.app/overtimes");
+      const response = await axios.get("http://localhost:8059/overtimes");
       setEmployees(response.data);
       const historicalData = response.data; // Assume historical data is here
       const predictedOvertime = predictOvertime(historicalData);
@@ -87,7 +93,7 @@ const OvertimeManagement = () => {
     try {
       if (isEditing) {
         await axios.put(
-          `https://backend-hr-4.vercel.app/overtimes/${employees[currentIndex]._id}`,
+          `http://localhost:8059/overtimes/${employees[currentIndex]._id}`,
           {
             name,
             position,
@@ -102,7 +108,7 @@ const OvertimeManagement = () => {
           show: true,
         });
       } else {
-        await axios.post("https://backend-hr-4.vercel.app/overtimes", {
+        await axios.post("http://localhost:8059/overtimes", {
           name,
           position,
           baseSalary,
@@ -135,6 +141,7 @@ const OvertimeManagement = () => {
     });
     setIsEditing(false);
     setCurrentIndex(null);
+    setOpenEditModal(false); // Close the edit modal
 
     setTimeout(() => {
       setNotification({ ...notification, show: false });
@@ -146,27 +153,20 @@ const OvertimeManagement = () => {
     setFormData(employee);
     setIsEditing(true);
     setCurrentIndex(index);
+    setOpenEditModal(true); // Open the edit modal
   };
 
-  const handleDelete = async (index) => {
-    const confirmed = window.confirm("Are you sure you want to delete this?");
-    if (!confirmed) {
-      return; // If the user cancels, exit the function
-    }
+  const handleDelete = async () => {
+   
     try {
-      await axios.delete(
-        `https://backend-hr-4.vercel.app/overtimes/${employees[index]._id}`
-      );
+      await axios.delete(`http://localhost:8059/overtimes/${selectedEmployeeId}`);
       fetchEmployees();
       setNotification({
         message: "Employee's Overtime deleted successfully!",
         type: "success",
         show: true,
       });
-
-      setTimeout(() => {
-        setNotification({ ...notification, show: false });
-      }, 5000);
+      setOpenDeleteModal(false); // Close the delete modal
     } catch (err) {
       console.error("Error deleting employee:", err);
       setNotification({
@@ -175,6 +175,11 @@ const OvertimeManagement = () => {
         show: true,
       });
     }
+  };
+
+  const handleOpenDeleteModal = (index) => {
+    setSelectedEmployeeId(employees[index]._id);
+    setOpenDeleteModal(true);
   };
 
   const filteredEmployees = employees.filter((employee) =>
@@ -385,7 +390,7 @@ const OvertimeManagement = () => {
                         <EditIcon />
                       </button>
                       <button
-                        onClick={() => handleDelete(index)}
+                        onClick={() => handleOpenDeleteModal(index)}
                         className="text-red-500 hover:text-[#EA0D10]"
                       >
                         <DeleteIcon />
@@ -395,14 +400,124 @@ const OvertimeManagement = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="text-center py-4  text-sm">
-                  No Employee Found.
+                  <td colSpan={6} className="text-center py-4 text-sm">
+                    No Employee Found.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Edit Modal */}
+        <Modal
+          open={openEditModal}
+          onClose={() => setOpenEditModal(false)}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-24">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              Edit Employee's Overtime
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="font-bold">Employee's Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">Position</label>
+                <select
+                  name="position"
+                  value={formData.position}
+                  onChange={(e) => {
+                    const selectedPosition = positions.find(
+                      (pos) => pos.position === e.target.value
+                    );
+                    setFormData({
+                      ...formData,
+                      position: e.target.value,
+                      baseSalary: selectedPosition
+                        ? selectedPosition.baseSalary
+                        : 0,
+                    });
+                  }}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                >
+                  <option value="">Choose a Position</option>
+                  {positions.map((position) => (
+                    <option key={position.position} value={position.position}>
+                      {position.position}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">Overtime Hours</label>
+                <input
+                  type="number"
+                  name="overtimeHours"
+                  value={formData.overtimeHours}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <button
+                  type="submit"
+                  className="bg-[#090367] font-bold text-white rounded px-4 py-2"
+                >
+                  Update Overtime
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpenEditModal(false)}
+                  className="text-gray-600 font-bold hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </Box>
+        </Modal>
+
+        {/* Delete Modal */}
+        <Modal
+          open={openDeleteModal}
+          onClose={() => setOpenDeleteModal(false)}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-80">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              Are you sure you want to delete this employee's overtime?
+            </h2>
+            <div className="flex justify-between items-center">
+              <button
+                onClick={handleDelete}
+                className="bg-red-600 text-white rounded px-4 py-2"
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setOpenDeleteModal(false)}
+                className="bg-gray-300 text-black rounded px-4 py-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </Box>
+        </Modal>
+
         <footer className="bg-white mt-36 p-4 rounded-md shadow-md">
           <p>2024 Hospital Management System. All Rights Reserved.</p>
         </footer>

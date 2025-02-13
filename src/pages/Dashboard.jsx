@@ -73,7 +73,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchShiftCounts = async () => {
       try {
-        const response = await fetch("https://backend-hr-4.vercel.app/shifts");
+        const response = await fetch("http://localhost:8059/shifts");
         const data = await response.json();
         const counts = data.reduce((acc, shift) => {
           const { shiftType } = shift;
@@ -88,7 +88,7 @@ const Dashboard = () => {
 
     const fetchLeaveCounts = async () => {
       try {
-        const response = await fetch("https://backend-hr-4.vercel.app/leaves");
+        const response = await fetch("http://localhost:8059/leaves");
         const data = await response.json();
         const counts = data.reduce((acc, leave) => {
           const { status } = leave;
@@ -103,7 +103,7 @@ const Dashboard = () => {
 
     const fetchOvertimeData = async () => {
       try {
-        const response = await fetch("https://backend-hr-4.vercel.app/overtimes");
+        const response = await fetch("http://localhost:8059/overtimes");
         const data = await response.json();
         const sortedData = data
           .sort((a, b) => b.overtimeHours - a.overtimeHours)
@@ -123,7 +123,7 @@ const Dashboard = () => {
 
     const fetchBenefitsData = async () => {
       try {
-        const response = await fetch("https://backend-hr-4.vercel.app/benefits");
+        const response = await fetch("http://localhost:8059/benefits");
         const data = await response.json();
 
         // Extracting the required benefit values
@@ -157,7 +157,7 @@ const Dashboard = () => {
     // New function to fetch incentives data
     const fetchIncentivesData = async () => {
       try {
-        const response = await fetch("https://backend-hr-4.vercel.app/incentives");
+        const response = await fetch("http://localhost:8059/incentives");
         const data = await response.json();
 
         // Extracting names and incentives for the ratings graph
@@ -351,9 +351,7 @@ const Dashboard = () => {
                   {status === "Approved" && (
                     <CheckCircleIcon className="mr-3" fontSize="large" />
                   )}
-                  {status === "Rejected" && (
-                    <CancelIcon className="mr-3" fontSize="large" />
-                  )}
+                 
                   {status === "Pending" && (
                     <HourglassEmptyIcon className="mr-3" fontSize="large" />
                   )}

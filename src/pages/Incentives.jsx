@@ -3,6 +3,8 @@ import { FaStar, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
+import Modal from "@mui/material/Modal"; // Import Modal
+import Box from "@mui/material/Box"; // Import Box
 
 const Incentives = () => {
   const [employees, setEmployees] = useState([]);
@@ -20,6 +22,11 @@ const Incentives = () => {
     type: "",
     message: "",
   });
+
+  // Modal states
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
 
   const positions = [
     { name: "Doctor", salary: 70000 },
@@ -45,7 +52,7 @@ const Incentives = () => {
 
   const fetchIncentives = async () => {
     try {
-      const response = await axios.get("https://backend-hr-4.vercel.app/incentives");
+      const response = await axios.get("http://localhost:8059/incentives");
       if (response.data.length === 0) {
         console.log("No employee data available");
       }
@@ -57,11 +64,9 @@ const Incentives = () => {
 
   // Predictive analytics model for incentives
   const predictIncentives = (rating, position) => {
-    // Base prediction formula (This can be more sophisticated)
     const baseIncentive = rating * 1000; // Incentives based on rating (1 to 5)
     let positionMultiplier = 1;
 
-    // Adjust the incentive multiplier based on the position
     switch (position) {
       case "Doctor":
         positionMultiplier = 1.5; // Doctors get higher incentives
@@ -101,7 +106,6 @@ const Incentives = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Predict incentives based on the rating and position
     const predictedIncentive = predictIncentives(
       formData.incentives,
       formData.position
@@ -110,25 +114,23 @@ const Incentives = () => {
 
     try {
       if (editIndex !== null) {
-        // Update existing employee
         const updatedEmployee = { ...formData, totalSalary };
         await axios.put(
-          `https://backend-hr-4.vercel.app/incentives/${employees[editIndex]._id}`,
+          `http://localhost:8059/incentives/${employees[editIndex]._id}`,
           updatedEmployee
         );
         const updatedEmployees = [...employees];
         updatedEmployees[editIndex] = updatedEmployee;
         setEmployees(updatedEmployees);
-        setEditIndex(null); // Reset edit index after updating
+        setEditIndex(null);
         showNotification(
           "success",
           "Employee's Incentives updated successfully!"
         );
       } else {
-        // Create new employee
         const newEmployee = { ...formData, totalSalary };
         const response = await axios.post(
-          "https://backend-hr-4.vercel.app/incentives",
+          "http://localhost:8059/incentives",
           newEmployee
         );
         setEmployees((prevEmployees) => [...prevEmployees, response.data]);
@@ -138,28 +140,25 @@ const Incentives = () => {
         );
       }
       setFormData({ name: "", position: "", salary: "", incentives: 0 });
+      setOpenEditModal(false); // Close the edit modal
     } catch (error) {
       console.error("Error saving employee:", error);
       showNotification("error", "Error saving employee!");
     }
   };
 
-  const handleDelete = async (index) => {
-    const confirmed = window.confirm("Are you sure you want to delete this?");
-    if (!confirmed) {
-      return;
-    }
+  const handleDelete = async () => {
+   
     try {
-      await axios.delete(
-        `https://backend-hr-4.vercel.app/incentives/${employees[index]._id}`
-      );
+      await axios.delete(`http://localhost:8059/incentives/${selectedEmployeeId}`);
       setEmployees((prevEmployees) =>
-        prevEmployees.filter((_, i) => i !== index)
+        prevEmployees.filter((emp) => emp._id !== selectedEmployeeId)
       );
       showNotification(
         "success",
         "Employee's Incentives deleted successfully!"
       );
+      setOpenDeleteModal(false); // Close the delete modal
     } catch (error) {
       console.error("Error deleting employee:", error);
       showNotification("error", "Error deleting employee!");
@@ -169,6 +168,12 @@ const Incentives = () => {
   const handleEdit = (index) => {
     setFormData(employees[index]);
     setEditIndex(index);
+    setOpenEditModal(true); // Open the edit modal
+  };
+
+  const handleOpenDeleteModal = (id) => {
+    setSelectedEmployeeId(id);
+    setOpenDeleteModal(true); // Open the delete modal
   };
 
   const showNotification = (type, message) => {
@@ -179,14 +184,12 @@ const Incentives = () => {
   };
 
   const formatCurrency = (amount) => {
-    // Convert amount to a number or default to 0 if undefined/null
     const numberAmount = parseFloat(amount) || 0; 
     return `₱${numberAmount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
   };
-  
 
   return (
     <div className="bg-[#F0F0F0] mt-16 ">
@@ -217,7 +220,7 @@ const Incentives = () => {
             Employee's Incentives
           </h1>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
+            <div className="mb-4">
               <label className="block text-sm font-medium mb-2 text-gray-700">
                 Search Employee
               </label>
@@ -266,7 +269,7 @@ const Incentives = () => {
             <div className="flex items-center">
               <div>
                 <label className=" block text-sm font-medium mb-2 text-gray-700">
-                  Incentives Rating:
+                Customers Satisfaction Rating:
                 </label>
                 <div className="flex space-x-2 mt-2">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -285,7 +288,7 @@ const Incentives = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-              Base Salary
+                Base Salary
               </label>
               <input
                 type="text" // Change type to text for formatted currency display
@@ -308,7 +311,6 @@ const Incentives = () => {
         </form>
 
         {/* Employees Table Section */}
-
         <div className="overflow-x-auto bg-white rounded-lg shadow-md table-container">
           <table className="min-w-full bg-white shadow-md rounded-lg">
             <thead className="bg-gray-100">
@@ -316,7 +318,7 @@ const Incentives = () => {
                 <th className="border px-4 sm:px-6 py-2">Employee's Name</th>
                 <th className="border px-4 sm:px-6 py-2">Position</th>
                 <th className="border px-4 sm:px-6 py-2">Base Salary</th>
-                <th className="border px-4 sm:px-6 py-2">Rating</th>
+                <th className="border px-4 sm:px-6 py-2">Customers Satisfaction</th>
                 <th className="border px-4 sm:px-6 py-2">Total Salary</th>
                 <th className="border px-4 sm:px-6 py-2">Actions</th>
               </tr>
@@ -356,13 +358,16 @@ const Incentives = () => {
                   </td>
                   <td className="border border-gray-300 p-2 flex justify-center">
                     <button
-                      onClick={() => handleEdit(index)}
+                      onClick={() => {
+                        handleEdit(index);
+                        setOpenEditModal(true); // Open the edit modal
+                      }}
                       className="text-blue-500 hover:text-[#090367]"
                     >
                       <EditIcon />
                     </button>
                     <button
-                      onClick={() => handleDelete(index)}
+                      onClick={() => handleOpenDeleteModal(employee._id)} // Pass employee ID to delete modal
                       className="text-red-500 hover:text-[#EA0D10]"
                     >
                       <DeleteIcon />
@@ -373,13 +378,117 @@ const Incentives = () => {
               {filteredEmployees.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-4  text-sm">
-                  No Employee Found.
+                    No Employee Found.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Edit Modal */}
+        <Modal
+          open={openEditModal}
+          onClose={() => setOpenEditModal(false)}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-24">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              Edit Employee's Incentives
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="font-bold">Employee's Name:</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">Position:</label>
+                <select
+                  name="position"
+                  value={formData.position}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                >
+                  <option value="">Choose a Position</option>
+                  {positions.map((pos) => (
+                    <option key={pos.name} value={pos.name}>
+                      {pos.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">Customers Satisfaction Rating:</label>
+                <div className="flex space-x-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <FaStar
+                      key={star}
+                      className={`text-2xl cursor-pointer ${
+                        formData.incentives >= star
+                          ? "text-yellow-500"
+                          : "text-gray-400"
+                      }`}
+                      onClick={() => handleStarClick(star)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <button
+                  type="submit"
+                  className="bg-[#090367] font-bold text-white rounded px-4 py-2"
+                >
+                  Update Incentives
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpenEditModal(false)}
+                  className="text-gray-600 font-bold hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </Box>
+        </Modal>
+
+        {/* Delete Modal */}
+        <Modal
+          open={openDeleteModal}
+          onClose={() => setOpenDeleteModal(false)}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-80">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              Are you sure you want to delete this employee's incentives?
+            </h2>
+            <div className="flex justify-between items-center">
+              <button
+                onClick={handleDelete}
+                className="bg-red-600 text-white rounded px-4 py-2"
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setOpenDeleteModal(false)}
+                className="bg-gray-300 text-black rounded px-4 py-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </Box>
+        </Modal>
+
         <footer className="bg-white mt-36 p-4 rounded-md shadow-md">
           <p>2024 Hospital Management System. All Rights Reserved.</p>
         </footer>

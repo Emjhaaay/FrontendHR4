@@ -6,7 +6,15 @@ import {
   FaExclamationCircle,
 } from "react-icons/fa";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit"; // Import icons
+import EditIcon from "@mui/icons-material/Edit";
+import {
+  Modal,
+  Box,
+  Button,
+  TextField,
+  Checkbox,
+  FormControlLabel,
+} from "@mui/material";
 
 const Benefits = () => {
   const [benefits, setBenefits] = useState([]);
@@ -18,64 +26,22 @@ const Benefits = () => {
   const [leaveChecked, setLeaveChecked] = useState(false);
   const [thirteenthMonthChecked, setThirteenthMonthChecked] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(""); // Search state
+  const [searchTerm, setSearchTerm] = useState("");
   const [notification, setNotification] = useState({
     show: false,
     message: "",
-    type: "success", // success or error
+    type: "success",
   });
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [deleteIndex, setDeleteIndex] = useState(null);
 
   const positions = [
-    {
-      name: "Nurse",
-      benefits: {
-        sss: true,
-        pagIbig: true,
-        philHealth: true,
-        leave: true,
-        thirteenthMonth: true,
-      },
-    },
-    {
-      name: "Doctor",
-      benefits: {
-        sss: true,
-        pagIbig: true,
-        philHealth: true,
-        leave: true,
-        thirteenthMonth: true,
-      },
-    },
-    {
-      name: "Pharmacist",
-      benefits: {
-        sss: true,
-        pagIbig: true,
-        philHealth: true,
-        leave: true,
-        thirteenthMonth: true,
-      },
-    },
-    {
-      name: "Physical Therapist",
-      benefits: {
-        sss: true,
-        pagIbig: true,
-        philHealth: true,
-        leave: true,
-        thirteenthMonth: true,
-      },
-    },
-    {
-      name: "Administrative Staff",
-      benefits: {
-        sss: true,
-        pagIbig: true,
-        philHealth: true,
-        leave: true,
-        thirteenthMonth: true,
-      },
-    },
+    { name: "Nurse", benefits: { sss: true, pagIbig: true, philHealth: true, leave: true, thirteenthMonth: true } },
+    { name: "Doctor", benefits: { sss: true, pagIbig: true, philHealth: true, leave: true, thirteenthMonth: true } },
+    { name: "Pharmacist", benefits: { sss: true, pagIbig: true, philHealth: true, leave: true, thirteenthMonth: true } },
+    { name: "Physical Therapist", benefits: { sss: true, pagIbig: true, philHealth: true, leave: true, thirteenthMonth: true } },
+    { name: "Administrative Staff", benefits: { sss: true, pagIbig: true, philHealth: true, leave: true, thirteenthMonth: true } },
   ];
 
   useEffect(() => {
@@ -83,9 +49,7 @@ const Benefits = () => {
   }, []);
 
   useEffect(() => {
-    const selectedPosition = positions.find(
-      (pos) => pos.name === employeePosition
-    );
+    const selectedPosition = positions.find(pos => pos.name === employeePosition);
     if (selectedPosition) {
       setSssChecked(selectedPosition.benefits.sss);
       setPagIbigChecked(selectedPosition.benefits.pagIbig);
@@ -99,7 +63,7 @@ const Benefits = () => {
 
   const fetchBenefits = async () => {
     try {
-      const response = await axios.get("https://backend-hr-4.vercel.app/benefits");
+      const response = await axios.get("http://localhost:8059/benefits");
       setBenefits(response.data);
     } catch (error) {
       console.error("Error fetching benefits:", error);
@@ -120,17 +84,10 @@ const Benefits = () => {
 
     if (editIndex !== null) {
       try {
-        await axios.put(
-          `https://backend-hr-4.vercel.app/benefits/${benefits[editIndex]._id}`,
-          benefitData
-        );
+        await axios.put(`http://localhost:8059/benefits/${benefits[editIndex]._id}`, benefitData);
         const updatedBenefits = [...benefits];
-        updatedBenefits[editIndex] = {
-          ...updatedBenefits[editIndex],
-          ...benefitData,
-        };
+        updatedBenefits[editIndex] = { ...updatedBenefits[editIndex], ...benefitData };
         setBenefits(updatedBenefits);
-        setEditIndex(null);
         showNotification("Employee's Benefits updated successfully!", "success");
       } catch (error) {
         showNotification("Error updating benefit", "error");
@@ -138,10 +95,7 @@ const Benefits = () => {
       }
     } else {
       try {
-        const response = await axios.post(
-          "https://backend-hr-4.vercel.app/benefits",
-          benefitData
-        );
+        const response = await axios.post("http://localhost:8059/benefits", benefitData);
         setBenefits([...benefits, response.data]);
         showNotification("Employee's Benefits added successfully!", "success");
       } catch (error) {
@@ -149,7 +103,7 @@ const Benefits = () => {
         console.error("Error adding benefit:", error);
       }
     }
-    resetForm();
+    handleCloseEditModal();
   };
 
   const handleEdit = (index) => {
@@ -162,30 +116,28 @@ const Benefits = () => {
     setLeaveChecked(benefit.leave);
     setThirteenthMonthChecked(benefit.thirteenthMonth);
     setEditIndex(index);
+    setOpenEditModal(true);
   };
 
-  const handleDelete = async (index) => {
-    const confirmed = window.confirm("Are you sure you want to delete this?");
-    if (!confirmed) {
-      console.log("Deletion cancelled.");
-      return; // Exit the function if cancelled
-    } else {
-      console.log("Item will be deleted."); // Log or handle the confirmation if needed
-    }
-    
-    try {
-      await axios.delete(
-        `https://backend-hr-4.vercel.app/benefits/${benefits[index]._id}`
-      );
-      const updatedBenefits = benefits.filter((_, i) => i !== index);
-      setBenefits(updatedBenefits);
-      showNotification("Employee's Benefits deleted successfully!", "success");
-    } catch (error) {
-      showNotification("Error deleting benefit", "error");
-      console.error("Error deleting benefit:", error);
+  const handleOpenDeleteModal = (index) => {
+    setDeleteIndex(index);
+    setOpenDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (deleteIndex !== null) {
+      try {
+        await axios.delete(`http://localhost:8059/benefits/${benefits[deleteIndex]._id}`);
+        const updatedBenefits = benefits.filter((_, i) => i !== deleteIndex);
+        setBenefits(updatedBenefits);
+        showNotification("Employee's Benefits deleted successfully!", "success");
+      } catch (error) {
+        showNotification("Error deleting benefit", "error");
+        console.error("Error deleting benefit:", error);
+      }
+      handleCloseDeleteModal();
     }
   };
-  
 
   const resetForm = () => {
     setEmployeeName("");
@@ -217,7 +169,17 @@ const Benefits = () => {
         message: "",
         type: "",
       });
-    }, 3000); // Hide notification after 3 seconds
+    }, 3000);
+  };
+
+  const handleCloseEditModal = () => {
+    setOpenEditModal(false);
+    resetForm();
+  };
+
+  const handleCloseDeleteModal = () => {
+    setOpenDeleteModal(false);
+    setDeleteIndex(null);
   };
 
   return (
@@ -225,7 +187,7 @@ const Benefits = () => {
       <div className="bg-[#F0F0F0] md:grid-cols-2 gap-4 mt-8 p-4">
         {notification.show && (
           <div
-            className={`fixed top-20 right-5 p-4 border rounded flex items-center  space-x-2 transition-opacity duration-500 ease-in-out ${
+            className={`fixed top-20 right-5 p-4 border rounded flex items-center space-x-2 transition-opacity duration-500 ease-in-out ${
               notification.show ? "opacity-100 visible" : "opacity-0 invisible"
             } ${
               notification.type === "success"
@@ -242,13 +204,13 @@ const Benefits = () => {
           </div>
         )}
 
-        <div className="bg-[#F0F0F0]  rounded-lg mb-6">
+        <div className="bg-[#F0F0F0] rounded-lg mb-6">
           <form
             className="bg-[white] shadow-md rounded-lg p-4 sm:p-3 mb-4 sm:mb-8"
             onSubmit={handleAddOrUpdate}
           >
             <h1 className="text-3xl font-bold mb-4 p-4 text-gray-800">
-            Employee's  Benefits
+              Employee's Benefits
             </h1>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -296,7 +258,6 @@ const Benefits = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
                   Benefits:
@@ -406,65 +367,32 @@ const Benefits = () => {
                   <th className="border px-4 sm:px-6 py-2">Actions</th>
                 </tr>
               </thead>
-              <tbody className=" text-xs sm:text-sm">
+              <tbody className="text-xs sm:text-sm">
                 {filteredBenefits.length > 0 ? (
                   filteredBenefits.map((benefit, index) => (
-                    <tr
-                      key={index}
-                      className="text-xs sm:text-sm  bg-white hover:bg-gray-100"
-                    >
+                    <tr key={index} className="text-xs sm:text-sm bg-white hover:bg-gray-100">
+                      <td className="border border-gray-300 p-2">{benefit.employeeName}</td>
+                      <td className="border border-gray-300 p-2">{benefit.employeePosition}</td>
                       <td className="border border-gray-300 p-2">
-                        {benefit.employeeName}
+                        {benefit.sss ? <FaCheckCircle className="text-green-600" /> : <FaTimesCircle className="text-red-600" />}
                       </td>
                       <td className="border border-gray-300 p-2">
-                        {benefit.employeePosition}
-                      </td>
-                      <td className="border  border-gray-300 p-2">
-                        {benefit.sss ? (
-                          <FaCheckCircle className="text-green-600" />
-                        ) : (
-                          <FaTimesCircle className="text-red-600" />
-                        )}
+                        {benefit.pagIbig ? <FaCheckCircle className="text-green-600" /> : <FaTimesCircle className="text-red-600" />}
                       </td>
                       <td className="border border-gray-300 p-2">
-                        {benefit.pagIbig ? (
-                          <FaCheckCircle className="text-green-600" />
-                        ) : (
-                          <FaTimesCircle className="text-red-600" />
-                        )}
+                        {benefit.philHealth ? <FaCheckCircle className="text-green-600" /> : <FaTimesCircle className="text-red-600" />}
                       </td>
                       <td className="border border-gray-300 p-2">
-                        {benefit.philHealth ? (
-                          <FaCheckCircle className="text-green-600" />
-                        ) : (
-                          <FaTimesCircle className="text-red-600" />
-                        )}
+                        {benefit.leave ? <FaCheckCircle className="text-green-600" /> : <FaTimesCircle className="text-red-600" />}
                       </td>
                       <td className="border border-gray-300 p-2">
-                        {benefit.leave ? (
-                          <FaCheckCircle className="text-green-600" />
-                        ) : (
-                          <FaTimesCircle className="text-red-600" />
-                        )}
-                      </td>
-                      <td className="border border-gray-300 p-2">
-                        {benefit.thirteenthMonth ? (
-                          <FaCheckCircle className="text-green-600" />
-                        ) : (
-                          <FaTimesCircle className="text-red-600" />
-                        )}
+                        {benefit.thirteenthMonth ? <FaCheckCircle className="text-green-600" /> : <FaTimesCircle className="text-red-600" />}
                       </td>
                       <td className="border border-gray-300 p-2 flex justify-center">
-                        <button
-                          onClick={() => handleEdit(index)}
-                          className="cursor-pointer text-blue-500 hover:text-[#090367]"
-                        >
+                        <button onClick={() => handleEdit(index)} className="cursor-pointer text-blue-500 hover:text-[#090367]">
                           <EditIcon />
                         </button>
-                        <button
-                          onClick={() => handleDelete(index)}
-                          className="cursor-pointer text-red-500 hover:text-[#EA0D10]"
-                        >
+                        <button onClick={() => handleOpenDeleteModal(index)} className="cursor-pointer text-red-500 hover:text-[#EA0D10]">
                           <DeleteIcon />
                         </button>
                       </td>
@@ -472,9 +400,7 @@ const Benefits = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="text-center py-4">
-                    No Employee Found.
-                    </td>
+                    <td colSpan="8" className="text-center py-4">No Employee Found.</td>
                   </tr>
                 )}
               </tbody>
@@ -485,6 +411,139 @@ const Benefits = () => {
           <p>2024 Hospital Management System. All Rights Reserved.</p>
         </footer>
       </div>
+
+      {/* Edit Modal */}
+      <Modal
+        open={openEditModal}
+        onClose={handleCloseEditModal}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-24">
+          <h2 className="text-2xl font-bold text-center mb-4">Edit Employee's Benefits</h2>
+          <form onSubmit={handleAddOrUpdate} className="space-y-4">
+            <div className="space-y-2">
+              <label className="font-bold">Employee's Name</label>
+              <input
+                type="text"
+                value={employeeName}
+                onChange={(e) => setEmployeeName(e.target.value)}
+                className="border border-gray-300 rounded p-2 w-full"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="font-bold">Employee's Position</label>
+              <select
+                value={employeePosition}
+                onChange={(e) => setEmployeePosition(e.target.value)}
+                className="border border-gray-300 rounded p-2 w-full"
+                required
+              >
+                <option value="">Select Position</option>
+                {positions.map((position, index) => (
+                  <option key={index} value={position.name}>
+                    {position.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="font-bold">Benefits:</label>
+              <div className="flex flex-col space-y-2">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={ssSChecked}
+                      onChange={(e) => setSssChecked(e.target.checked)}
+                    />
+                  }
+                  label="SSS"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={pagIbigChecked}
+                      onChange={(e) => setPagIbigChecked(e.target.checked)}
+                    />
+                  }
+                  label="Pag-Ibig"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={philHealthChecked}
+                      onChange={(e) => setPhilHealthChecked(e.target.checked)}
+                    />
+                  }
+                  label="PhilHealth"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={leaveChecked}
+                      onChange={(e) => setLeaveChecked(e.target.checked)}
+                    />
+                  }
+                  label="Leave"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={thirteenthMonthChecked}
+                      onChange={(e) => setThirteenthMonthChecked(e.target.checked)}
+                    />
+                  }
+                  label="13th Month"
+                />
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <button
+                type="submit"
+                className="bg-[#090367] font-bold text-white rounded px-4 py-2"
+              >
+                Update Benefits
+              </button>
+              <button
+                type="button"
+                onClick={handleCloseEditModal}
+                className="text-gray-600 font-bold hover:text-gray-800"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Box>
+      </Modal>
+
+      {/* Delete Modal */}
+      <Modal
+        open={openDeleteModal}
+        onClose={handleCloseDeleteModal}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-80">
+          <h2 className="text-2xl font-bold text-center mb-4">
+            Are you sure you want to delete this benefit?
+          </h2>
+          <div className="flex justify-between items-center">
+            <button
+              onClick={handleDelete}
+              className="bg-red-600 text-white rounded px-4 py-2"
+            >
+              Yes, Delete
+            </button>
+            <button
+              onClick={handleCloseDeleteModal}
+              className="bg-gray-300 text-black rounded px-4 py-2"
+            >
+              Cancel
+            </button>
+          </div>
+        </Box>
+      </Modal>
     </div>
   );
 };

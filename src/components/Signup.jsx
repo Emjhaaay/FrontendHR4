@@ -25,7 +25,7 @@ function Signup() {
     setErrorMessage("");
 
     try {
-      const response = await axios.post("https://backend-hr-4.vercel.app/register", {
+      const response = await axios.post("http://localhost:8059/register", {
         name,
         email,
         password,
