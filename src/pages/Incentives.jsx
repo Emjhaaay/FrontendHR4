@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { FaStar, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
+import { FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
 import Modal from "@mui/material/Modal"; // Import Modal
+import { motion } from 'framer-motion';
 import Box from "@mui/material/Box"; // Import Box
+import Snackbar from "@mui/material/Snackbar"; // Import Snackbar
+import Alert from "@mui/material/Alert"; // Import Alert
 
 const Incentives = () => {
   const [employees, setEmployees] = useState([]);
@@ -12,15 +15,15 @@ const Incentives = () => {
   const [formData, setFormData] = useState({
     name: "",
     position: "",
-    salary: "",
-    incentives: 0,
+    attendance: 0, // Removed salary and bonuses
+    unusedLeaveBonus: "Not Used", // Default to "Not Used"
   });
   const [editIndex, setEditIndex] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterPosition, setFilterPosition] = useState(""); // State for filter position
   const [notification, setNotification] = useState({
-    show: false,
-    type: "",
     message: "",
+    type: "",
   });
 
   // Modal states
@@ -28,12 +31,49 @@ const Incentives = () => {
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
 
+  // Snackbar state
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
   const positions = [
-    { name: "Doctor", salary: 70000 },
-    { name: "Nurse", salary: 35000 },
-    { name: "Pharmacist", salary: 25000 },
-    { name: "Physical Therapist", salary: 20000 },
-    { name: "Administrative Staff", salary: 15000 },
+    { name: "Medical Center Chief" },
+    { name: "Medical Specialist III" },
+    { name: "Chief Medical Officer" },
+    { name: "Chief of Hospital" },
+    { name: "Chief Nursing Officer" },
+    { name: "Chief Administrative Officer" },
+    { name: "Chief Financial Officer" },
+    { name: "Chief Information Officer" },
+    { name: "Medical Specialist II" },
+    { name: "Psychiatrist" },
+    { name: "Dentist" },
+    { name: "Information Technology Officer" },
+    { name: "Financial and Management Officer" },
+    { name: "Medical Officer IV" },
+    { name: "Chief Medical Technologist" },
+    { name: "Chief Pharmacist" },
+    { name: "Medical Officer III" },
+    { name: "Medical Officer II" },
+    { name: "Medical Officer I" },
+    { name: "Nurse 2" },
+    { name: "Nurse 3" },
+    { name: "Nurse 4" },
+    { name: "Medical Specialist I" },
+    { name: "Medical Technologist" },
+    { name: "HR Management Officer" },
+    { name: "Information Officer" },
+    { name: "Licensing Officer" },
+    { name: "Dietician/Nutritionist" },
+    { name: "Nurse 1" },
+    { name: "Psychologist" },
+    { name: "Health Physicist" },
+    { name: "Chemist" },
+    { name: "Physical Therapist" },
+    { name: "Ward Assistant" },
+    { name: "Administrative Officer" },
+    { name: "Administrative Assistant" },
+    { name: "Administrative Aide" },
+    { name: "Medical Equipment Technician" },
+    { name: "Laboratory Aide" },
   ];
 
   useEffect(() => {
@@ -42,13 +82,17 @@ const Incentives = () => {
 
   useEffect(() => {
     setFilteredEmployees(
-      employees.filter(
-        (emp) =>
+      employees.filter((emp) => {
+        const matchesSearchTerm =
           emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          emp.position.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+          emp.position.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesPosition = filterPosition
+          ? emp.position === filterPosition
+          : true;
+        return matchesSearchTerm && matchesPosition;
+      })
     );
-  }, [searchTerm, employees]);
+  }, [searchTerm, filterPosition, employees]);
 
   const fetchIncentives = async () => {
     try {
@@ -62,59 +106,39 @@ const Incentives = () => {
     }
   };
 
-  // Predictive analytics model for incentives
-  const predictIncentives = (rating, position) => {
-    const baseIncentive = rating * 1000; // Incentives based on rating (1 to 5)
-    let positionMultiplier = 1;
-
-    switch (position) {
-      case "Doctor":
-        positionMultiplier = 1.5; // Doctors get higher incentives
-        break;
-      case "Nurse":
-        positionMultiplier = 1.3;
-        break;
-      case "Pharmacist":
-        positionMultiplier = 1.2;
-        break;
-      default:
-        positionMultiplier = 1;
-        break;
-    }
-
-    return baseIncentive * positionMultiplier;
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // If the field is attendance, ensure it does not exceed 22
+    if (name === "attendance") {
+      const numericValue = Number(value);
+      if (numericValue < 0) {
+        return; // Prevent setting negative values
+      }
+    }
+
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
-      salary:
-        name === "position"
-          ? positions.find((pos) => pos.name === value)?.salary || ""
-          : prevData.salary,
     }));
   };
 
-  const handleStarClick = (value) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      incentives: value,
-    }));
+  const determineEligibility = (attendance) => {
+    return attendance >= 15 ? "✅ Yes" : "❌ No"; // Eligible if attendance is 15 or more
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const predictedIncentive = predictIncentives(
-      formData.incentives,
-      formData.position
-    );
-    const totalSalary = parseFloat(formData.salary) + predictedIncentive;
-
+  
+    // Validate attendance
+    if (formData.attendance < 0 || formData.attendance > 22) {
+      showNotification("error", "Attendance must be between 0 and 22!");
+      return;
+    }
+  
     try {
       if (editIndex !== null) {
-        const updatedEmployee = { ...formData, totalSalary };
+        const updatedEmployee = { ...formData };
         await axios.put(
           `http://localhost:8059/incentives/${employees[editIndex]._id}`,
           updatedEmployee
@@ -123,34 +147,42 @@ const Incentives = () => {
         updatedEmployees[editIndex] = updatedEmployee;
         setEmployees(updatedEmployees);
         setEditIndex(null);
-        showNotification(
-          "success",
-          "Employee's Incentives updated successfully!"
-        );
+        showNotification("success", "Employee's Incentives updated successfully!");
       } else {
-        const newEmployee = { ...formData, totalSalary };
+        const newEmployee = { ...formData };
         const response = await axios.post(
           "http://localhost:8059/incentives",
           newEmployee
         );
         setEmployees((prevEmployees) => [...prevEmployees, response.data]);
-        showNotification(
-          "success",
-          "Employee's Incentives added successfully!"
-        );
+        showNotification("success", "Employee's Incentives added successfully!");
       }
-      setFormData({ name: "", position: "", salary: "", incentives: 0 });
+      
+      // Reset form data
+      setFormData({
+        name: "",
+        position: "",
+        attendance: 0,
+        unusedLeaveBonus: "Not Used", // Reset unused leave bonus
+      });
       setOpenEditModal(false); // Close the edit modal
     } catch (error) {
       console.error("Error saving employee:", error);
-      showNotification("error", "Error saving employee!");
+      if (error.response) {
+        // Server responded with a status other than 200 range
+        showNotification("error", `Error saving employee: ${error.response.data.message || error.message}`);
+      } else {
+        // Network error or other issues
+        showNotification("error", "Error saving employee! Please try again.");
+      }
     }
   };
 
   const handleDelete = async () => {
-   
     try {
-      await axios.delete(`http://localhost:8059/incentives/${selectedEmployeeId}`);
+      await axios.delete(
+        `http://localhost:8059/incentives/${selectedEmployeeId}`
+      );
       setEmployees((prevEmployees) =>
         prevEmployees.filter((emp) => emp._id !== selectedEmployeeId)
       );
@@ -177,40 +209,29 @@ const Incentives = () => {
   };
 
   const showNotification = (type, message) => {
-    setNotification({ show: true, type, message });
-    setTimeout(() => {
-      setNotification({ show: false, type: "", message: "" });
-    }, 3000);
+    setNotification({ type, message });
+    setSnackbarOpen(true); // Open the Snackbar
   };
 
-  const formatCurrency = (amount) => {
-    const numberAmount = parseFloat(amount) || 0; 
-    return `₱${numberAmount.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   return (
-    <div className="bg-[#F0F0F0] mt-16 ">
-      <div className="bg-[#F0F0F0] md:grid-cols-2 gap-4 mt-8 p-4">
-        <div
-          className={`fixed top-30 right-5 p-4 border rounded flex items-center space-x-2 transition-opacity duration-500 ease-in-out ${
-            notification.show ? "opacity-100 visible" : "opacity-0 invisible"
-          } ${
-            notification.type === "success"
-              ? "bg-green-100 border-green-300 text-green-800"
-              : "bg-red-100 border-red-300 text-red-800"
-          }`}
-        >
-          {notification.type === "success" ? (
-            <FaCheckCircle size={20} className="text-green-600" />
-          ) : (
-            <FaExclamationCircle size={20} className="text-red-600" />
-          )}
-          <span>{notification.message}</span>
-        </div>
+    <div className="bg-[#F0F0F0] p-6 ">
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }} // Positioning the Snackbar
+      >
+        <Alert onClose={handleSnackbarClose} severity={notification.type}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
 
+      <div>
         {/* Form Section */}
         <form
           onSubmit={handleSubmit}
@@ -219,20 +240,7 @@ const Incentives = () => {
           <h1 className="text-2xl sm:text-3xl font-bold p-4 mb-8 sm:mb-6 text-gray-800">
             Employee's Incentives
           </h1>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2 text-gray-700">
-                Search Employee
-              </label>
-              <input
-                type="text"
-                placeholder="Search Employee's Name"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
-              />
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
                 Employee's Name
@@ -249,7 +257,7 @@ const Incentives = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Position
+                Employee's Position
               </label>
               <select
                 name="position"
@@ -266,43 +274,24 @@ const Incentives = () => {
                 ))}
               </select>
             </div>
-            <div className="flex items-center">
-              <div>
-                <label className=" block text-sm font-medium mb-2 text-gray-700">
-                Customers Satisfaction Rating:
-                </label>
-                <div className="flex space-x-2 mt-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <FaStar
-                      key={star}
-                      className={`text-2xl cursor-pointer ${
-                        formData.incentives >= star
-                          ? "text-yellow-500"
-                          : "text-gray-400"
-                      }`}
-                      onClick={() => handleStarClick(star)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Base Salary
+                Attendance
               </label>
               <input
-                type="text" // Change type to text for formatted currency display
-                name="salary"
-                value={formatCurrency(formData.salary)} // Use formatCurrency to display the formatted salary
-                onChange={handleChange} // Optional if you're allowing changes to the input
-                className="w-full px-3 py-2 border bg-gray-100 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
-                disabled // Keep disabled if you don't want user edits
+                type="number"
+                name="attendance"
+                value={formData.attendance}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
+                required
+                max="22" // Set the max attribute to limit input
               />
             </div>
             <div className="mt-3 ml-8">
               <button
                 type="submit"
-                className="mt-4 py-2 px-4 bg-[#090367] text-white font-semibold rounded-md shadow-md hover:bg-[#EA0D10] transition-colors duration-200"
+                className="mt-4 py-2 px-4 bg-[white] text-black font-semibold rounded-md shadow-md hover:bg-[#304994] hover:text-white transition-colors duration-200"
               >
                 {editIndex !== null ? "Update Incentives" : "Add Incentives"}
               </button>
@@ -310,74 +299,94 @@ const Incentives = () => {
           </div>
         </form>
 
+        {/* Search and Filter Section */}
+        <div className="flex flex-col md:flex-row md:space-x-4 mb-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              Search Employee
+            </label>
+            <input
+              type="text"
+              placeholder="Search Employee's Name"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border border-gray-300 rounded p-2 mb-2 w-full focus:outline-none focus:ring-2 focus:ring-[#090367]"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              Filter by Position
+            </label>
+            <select
+              value={filterPosition}
+              onChange={(e) => setFilterPosition(e.target.value)}
+              className="border border-gray-300 rounded p-2 mb-2 w-full focus:outline-none focus:ring-2 focus:ring-[#090367]"
+            >
+              <option value="">All Positions</option>
+              {positions.map((pos) => (
+                <option key={pos.name} value={pos.name}>
+                  {pos.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Employees Table Section */}
         <div className="overflow-x-auto bg-white rounded-lg shadow-md table-container">
           <table className="min-w-full bg-white shadow-md rounded-lg">
             <thead className="bg-gray-100">
-              <tr className="bg-[#090367] text-white text-xs sm:text-sm leading-normal">
+              <tr className="bg-[white] text-black text-xs sm:text-sm leading-normal">
                 <th className="border px-4 sm:px-6 py-2">Employee's Name</th>
                 <th className="border px-4 sm:px-6 py-2">Position</th>
-                <th className="border px-4 sm:px-6 py-2">Base Salary</th>
-                <th className="border px-4 sm:px-6 py-2">Customers Satisfaction</th>
-                <th className="border px-4 sm:px-6 py-2">Total Salary</th>
+                <th className="border px-4 sm:px-6 py-2">Attendance</th>
+                <th className="border px-4 sm:px-6 py-2">AI Incentives Eligibility</th>
                 <th className="border px-4 sm:px-6 py-2">Actions</th>
               </tr>
             </thead>
-            <tbody className=" text-xs sm:text-sm">
-              {filteredEmployees.map((employee, index) => (
-                <tr
-                  key={employee._id}
-                  className="text-xs sm:text-sm bg-white hover:bg-gray-100"
-                >
-                  <td className="border border-gray-300 p-2">
-                    {employee.name}
-                  </td>
-                  <td className="border border-gray-300 p-2">
-                    {employee.position}
-                  </td>
-
-                  <td className="border border-gray-300 p-2">
-                    {formatCurrency(employee.salary)}
-                  </td>
-                  <td className="border border-gray-300 p-2">
-                    <div className=" flex space-x-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <FaStar
-                          key={star}
-                          className={`text-lg ${
-                            employee.incentives >= star
-                              ? "text-yellow-500"
-                              : "text-gray-400"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 p-2">
-                    {formatCurrency(employee.totalSalary)}
-                  </td>
-                  <td className="border border-gray-300 p-2 flex justify-center">
-                    <button
-                      onClick={() => {
-                        handleEdit(index);
-                        setOpenEditModal(true); // Open the edit modal
-                      }}
-                      className="text-blue-500 hover:text-[#090367]"
-                    >
-                      <EditIcon />
-                    </button>
-                    <button
-                      onClick={() => handleOpenDeleteModal(employee._id)} // Pass employee ID to delete modal
-                      className="text-red-500 hover:text-[#EA0D10]"
-                    >
-                      <DeleteIcon />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+            <tbody className="text-xs sm:text-sm">
+              {filteredEmployees.map((employee, index) => {
+                const eligibility = determineEligibility(employee.attendance); // Determine eligibility for incentives
+                return (
+                  <tr
+                    key={employee._id}
+                    className={`text-xs sm:text-sm bg-white hover:bg-gray-100`}
+                  >
+                    <td className="border border-gray-300 p-2">
+                      {employee.name}
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      {employee.position}
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      {employee.attendance}/22 days
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      {eligibility}
+                    </td>
+                    <td className="border border-gray-300 p-2 ">
+                      <button
+                        onClick={() => {
+                          handleEdit(index);
+                          setOpenEditModal(true); // Open the edit modal
+                        }}
+                        className="text-blue-500 hover:text-[#090367]"
+                      >
+                        <EditIcon />
+                      </button>
+                      <button
+                        onClick={() => handleOpenDeleteModal(employee._id)} // Pass employee ID to delete modal
+                        className="text-red-500 hover:text-[#EA0D10]"
+                      >
+                        <DeleteIcon />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredEmployees.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-4  text-sm">
+                  <td colSpan={5} className="text-center py-4 text-sm">
                     No Employee Found.
                   </td>
                 </tr>
@@ -393,6 +402,12 @@ const Incentives = () => {
           aria-labelledby="modal-modal-title"
           aria-describedby="modal-modal-description"
         >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.3 }}
+          >
           <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-24">
             <h2 className="text-2xl font-bold text-center mb-4">
               Edit Employee's Incentives
@@ -427,25 +442,21 @@ const Incentives = () => {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="font-bold">Customers Satisfaction Rating:</label>
-                <div className="flex space-x-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <FaStar
-                      key={star}
-                      className={`text-2xl cursor-pointer ${
-                        formData.incentives >= star
-                          ? "text-yellow-500"
-                          : "text-gray-400"
-                      }`}
-                      onClick={() => handleStarClick(star)}
-                    />
-                  ))}
-                </div>
+                <label className="font-bold">Attendance:</label>
+                <input
+                  type="number"
+                  name="attendance"
+                  value={formData.attendance}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                  max="22" // Set the max attribute to limit input
+                />
               </div>
               <div className="flex justify-between items-center">
                 <button
                   type="submit"
-                  className="bg-[#090367] font-bold text-white rounded px-4 py-2"
+                  className="hover:bg-[#304994] hover:text-white font-bold text-black rounded px-4 py-2"
                 >
                   Update Incentives
                 </button>
@@ -459,6 +470,7 @@ const Incentives = () => {
               </div>
             </form>
           </Box>
+          </motion.div>
         </Modal>
 
         {/* Delete Modal */}
@@ -468,6 +480,12 @@ const Incentives = () => {
           aria-labelledby="modal-modal-title"
           aria-describedby="modal-modal-description"
         >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.3 }}
+          >
           <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-80">
             <h2 className="text-2xl font-bold text-center mb-4">
               Are you sure you want to delete this employee's incentives?
@@ -487,6 +505,7 @@ const Incentives = () => {
               </button>
             </div>
           </Box>
+          </motion.div>
         </Modal>
 
         <footer className="bg-white mt-36 p-4 rounded-md shadow-md">

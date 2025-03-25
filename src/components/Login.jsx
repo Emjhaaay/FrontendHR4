@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import eye icons
+import { CircularProgress } from '@mui/material'; // Import CircularProgress
 import Nodado from "../images/logo.png";
 import "../index.css";
 
@@ -31,7 +32,7 @@ function Login({ onLogin }) {
     setErrorMessage("");
 
     try {
-      const response = await axios.post("http://localhost:8059/login", {
+      const response = await axios.post("https://backendhr4.vercel.app/login", {
         email,
         password,
       });
@@ -81,7 +82,7 @@ function Login({ onLogin }) {
             className="h-20 w-20 mr-4"
           />
           <div className="text-left">
-          <h1 className="text-3xl font-bold text-[#EA0D10]">HR DEPARTMENT</h1>
+            <h1 className="text-3xl font-bold text-[#EA0D10]">HR DEPARTMENT</h1>
             <h2 className="text-lg text-[#090367]">Admin Login</h2>
           </div>
         </div>
@@ -106,7 +107,7 @@ function Login({ onLogin }) {
               className="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               onChange={(e) => setEmail(e.target.value)}
               value={email} // Bind the email input to state
-              required
+ required
             />
           </div>
           <div className="mb-4">
@@ -153,13 +154,12 @@ function Login({ onLogin }) {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-[#090367] transition duration-300"
+            className="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-[#304994] hover:text-white transition duration-300 flex items-center justify-center"
             disabled={loading}
           >
-            {loading ? "Loading..." : "Login"}
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
           </button>
         </form>
-        
       </div>
     </div>
   );

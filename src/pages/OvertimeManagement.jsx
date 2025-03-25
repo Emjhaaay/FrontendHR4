@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit"; // Import icons
+import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
-import Modal from "@mui/material/Modal"; // Import Modal
-import Box from "@mui/material/Box"; // Import Box
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import { motion } from "framer-motion";
 import "/src/index.css";
 
 const OvertimeManagement = () => {
@@ -12,67 +15,92 @@ const OvertimeManagement = () => {
   const [formData, setFormData] = useState({
     name: "",
     position: "",
-    baseSalary: 0,
     overtimeHours: 0,
-    totalSalary: 0,
-    predictedOvertime: 0, // Added for predicted overtime
+    predictedOvertimeHours: 0,
+    approved: false, // New field for approval status
   });
   const [isEditing, setIsEditing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
   const [notification, setNotification] = useState({
     message: "",
     type: "",
-    show: false,
   });
-  const [searchQuery, setSearchQuery] = useState(""); // State for search query
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPosition, setSelectedPosition] = useState("");
 
   // Modal states
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
 
+  // Snackbar state
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
   const positions = [
-    { position: "Doctor", baseSalary: 70000 },
-    { position: "Nurse", baseSalary: 35000 },
-    { position: "Pharmacist", baseSalary: 25000 },
-    { position: "Physical Therapist", baseSalary: 20000 },
-    { position: "Administrative Staff", baseSalary: 15000 },
+    { position: "Medical Center Chief" },
+    { position: "Medical Specialist III" },
+    { position: "Chief Medical Officer" },
+    { position: "Chief of Hospital" },
+    { position: "Chief Nursing Officer" },
+    { position: "Chief Administrative Officer" },
+    { position: "Chief Financial Officer" },
+    { position: "Chief Information Officer" },
+    { position: "Medical Specialist II" },
+    { position: "Psychiatrist" },
+    { position: "Dentist" },
+    { position: "Information Technology Officer" },
+    { position: "Financial and Management Officer" },
+    { position: "Medical Officer IV" },
+    { position: "Chief Medical Technologist" },
+    { position: "Chief Pharmacist" },
+    { position: "Medical Officer III" },
+    { position: "Medical Officer II" },
+    { position: "Medical Officer I" },
+    { position: "Nurse 2" },
+    { position: "Nurse 3" },
+    { position: "Nurse 4" },
+    { position: "Medical Specialist I" },
+    { position: "Medical Technologist" },
+    { position: "HR Management Officer" },
+    { position: "Information Officer" },
+    { position: "Licensing Officer" },
+    { position: "Dietician/Nutritionist" },
+    { position: "Nurse 1" },
+    { position: "Psychologist" },
+    { position: "Health Physicist" },
+    { position: "Chemist" },
+    { position: "Physical Therapist" },
+    { position: "Ward Assistant" },
+    { position: "Administrative Officer" },
+    { position: "Administrative Assistant" },
+    { position: "Administrative Aide" },
+    { position: "Medical Equipment Technician" },
+    { position: "Laboratory Aide" },
   ];
 
-  const calculateTotalSalary = (baseSalary, overtimeHours) => {
-    const overtimeRate = 1.5; // Overtime hour rates
-    const overtimePay = overtimeHours * (baseSalary / 264) * overtimeRate; // 264 - working hours per month
-    return baseSalary + overtimePay;
-  };
-
-  const predictOvertime = (historicalData) => {
-    if (historicalData.length === 0) return 0;
-    const totalOvertime = historicalData.reduce(
-      (sum, entry) => sum + entry.overtimeHours,
-      0
+  const calculatePredictedOvertimeHours = (currentOvertimeHours) => {
+    const increasePercentage = 0.1; // Example: 10% increase
+    const predictedHours = Math.round(
+      currentOvertimeHours * (1 + increasePercentage)
     );
-    return totalOvertime / historicalData.length; // Average overtime
-  };
-
-  const formatCurrency = (amount) => {
-    return `₱${parseFloat(amount).toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+    return Math.max(predictedHours, 0); // Ensure no negative values
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, type, checked } = e.target;
+
+    // Prevent negative input for overtime hours
+    if (name === "overtimeHours" && value < 0) {
+      return; // Do not update state if the value is negative
+    }
+
+    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
   };
 
   const fetchEmployees = async () => {
     try {
       const response = await axios.get("http://localhost:8059/overtimes");
       setEmployees(response.data);
-      const historicalData = response.data; // Assume historical data is here
-      const predictedOvertime = predictOvertime(historicalData);
-      setFormData((prev) => ({ ...prev, predictedOvertime }));
     } catch (err) {
       console.error("Error fetching employees:", err);
     }
@@ -82,13 +110,19 @@ const OvertimeManagement = () => {
     fetchEmployees();
   }, []);
 
+  useEffect(() => {
+    const predictedOvertimeHours = calculatePredictedOvertimeHours(
+      formData.overtimeHours
+    );
+    setFormData((prevData) => ({
+      ...prevData,
+      predictedOvertimeHours,
+    }));
+  }, [formData.overtimeHours]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { name, position, baseSalary, overtimeHours } = formData;
-    const totalSalary = calculateTotalSalary(
-      parseFloat(baseSalary),
-      parseFloat(overtimeHours)
-    );
+    const { name, position, overtimeHours, approved } = formData;
 
     try {
       if (isEditing) {
@@ -97,28 +131,24 @@ const OvertimeManagement = () => {
           {
             name,
             position,
-            baseSalary,
             overtimeHours,
-            totalSalary,
+            approved, // Include approval status
           }
         );
         setNotification({
           message: "Employee's Overtime updated successfully!",
           type: "success",
-          show: true,
         });
       } else {
         await axios.post("http://localhost:8059/overtimes", {
           name,
           position,
-          baseSalary,
           overtimeHours,
-          totalSalary,
+          approved, // Include approval status
         });
         setNotification({
           message: "Employee added successfully!",
           type: "success",
-          show: true,
         });
       }
       fetchEmployees();
@@ -127,54 +157,59 @@ const OvertimeManagement = () => {
       setNotification({
         message: "Error occurred while saving employee.",
         type: "error",
-        show: true,
       });
     }
 
     setFormData({
       name: "",
       position: "",
-      baseSalary: 0,
       overtimeHours: 0,
-      totalSalary: 0,
-      predictedOvertime: 0, // Reset predicted overtime
+      predictedOvertimeHours: 0,
+      approved: false, // Reset approval status
     });
     setIsEditing(false);
     setCurrentIndex(null);
-    setOpenEditModal(false); // Close the edit modal
+    setOpenEditModal(false);
 
-    setTimeout(() => {
-      setNotification({ ...notification, show: false });
-    }, 3000);
+    setSnackbarOpen(true);
   };
 
   const handleEdit = (index) => {
     const employee = employees[index];
-    setFormData(employee);
+    setFormData({
+      name: employee.name,
+      position: employee.position,
+      overtimeHours: employee.overtimeHours,
+      predictedOvertimeHours: calculatePredictedOvertimeHours(
+        employee.overtimeHours
+      ),
+      approved: employee.approved, // Set approval status for editing
+    });
     setIsEditing(true);
     setCurrentIndex(index);
-    setOpenEditModal(true); // Open the edit modal
+    setOpenEditModal(true);
   };
 
   const handleDelete = async () => {
-   
     try {
-      await axios.delete(`http://localhost:8059/overtimes/${selectedEmployeeId}`);
+      await axios.delete(
+        `http://localhost:8059/overtimes/${selectedEmployeeId}`
+      );
       fetchEmployees();
       setNotification({
         message: "Employee's Overtime deleted successfully!",
         type: "success",
-        show: true,
       });
-      setOpenDeleteModal(false); // Close the delete modal
+      setOpenDeleteModal(false);
     } catch (err) {
       console.error("Error deleting employee:", err);
       setNotification({
         message: "Error occurred while deleting employee.",
         type: "error",
-        show: true,
       });
     }
+
+    setSnackbarOpen(true);
   };
 
   const handleOpenDeleteModal = (index) => {
@@ -182,191 +217,202 @@ const OvertimeManagement = () => {
     setOpenDeleteModal(true);
   };
 
-  const filteredEmployees = employees.filter((employee) =>
-    employee.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEmployees = employees.filter((employee) => {
+    const matchesSearchQuery = employee.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesPosition = selectedPosition
+      ? employee.position === selectedPosition
+      : true;
+    return matchesSearchQuery && matchesPosition;
+  });
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
 
   return (
-    <div className="bg-[#F0F0F0] mt-16">
-      <div className="bg-[#F0F0F0] md:grid-cols-2 gap-4 mt-8 p-4">
-        <div
-          className={`fixed top-30 right-5 p-4 border rounded flex items-center space-x-2 transition-opacity duration-500 ease-in-out ${
-            notification.show ? "opacity-100 visible" : "opacity-0 invisible"
-          } ${
-            notification.type === "success"
-              ? "bg-green-100 border-green-300 text-green-800"
-              : "bg-red-100 border-red-300 text-red-800"
-          }`}
+    <div className="bg-[#F0F0F0] p-6">
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={notification.type}
+          sx={{
+            backgroundColor: notification.type === "success" ? "white" : "red",
+          }}
         >
-          {notification.type === "success" ? (
-            <FaCheckCircle size={20} className="text-green-600" />
-          ) : (
-            <FaExclamationCircle size={20} className="text-red-600" />
-          )}
-          <span>{notification.message}</span>
-        </div>
+          {notification.message}
+        </Alert>
+      </Snackbar>
 
-        <form
-          className="bg-[white] shadow-md rounded-lg p-4 sm:p-3 mb-4 sm:mb-8"
-          onSubmit={handleSubmit}
-        >
-          <h1 className="text-2xl p-4 sm:text-3xl font-bold mb-8 sm:mb-6 text-gray-800">
-            Overtime Management
-          </h1>
+      <form
+        className="bg-[white] shadow-md rounded-lg p-4 sm:p-3 mb-4 sm:mb-8"
+        onSubmit={handleSubmit}
+      >
+        <h1 className="text-2xl p-4 sm:text-3xl font-bold mb-8 sm:mb-6 text-gray-800">
+          Employee's Overtime
+        </h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">
-                Search Employee
-              </label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Employee's Name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
-              />
-            </div>
-
-            {/* Existing form inputs */}
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">
-                Employee's Name
-              </label>
-              <input
-                type="text"
-                placeholder="Employee's Name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">
-                Position
-              </label>
-              <select
-                name="position"
-                value={formData.position}
-                onChange={(e) => {
-                  const selectedPosition = positions.find(
-                    (pos) => pos.position === e.target.value
-                  );
-                  setFormData({
-                    ...formData,
-                    position: e.target.value,
-                    baseSalary: selectedPosition
-                      ? selectedPosition.baseSalary
-                      : 0,
-                  });
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
-                required
-              >
-                <option value="">Choose a Position</option>
-                {positions.map((position) => (
-                  <option key={position.position} value={position.position}>
-                    {position.position}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">
-                Base Salary
-              </label>
-              <input
-                type="text" // Changed type to text to accommodate the formatted currency
-                placeholder="Base Salary"
-                name="baseSalary"
-                value={formatCurrency(formData.baseSalary)}
-                readOnly // Made read-only, will be set based on position selection
-                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">
-                Overtime Hours
-              </label>
-              <input
-                type="number"
-                placeholder="Overtime Hours"
-                name="overtimeHours"
-                value={formData.overtimeHours}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">
-                Total Salary
-              </label>
-              <input
-                type="text"
-                placeholder="Total Salary"
-                name="totalSalary"
-                value={formatCurrency(
-                  calculateTotalSalary(
-                    formData.baseSalary,
-                    formData.overtimeHours
-                  )
-                )}
-                readOnly
-                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
-              />
-            </div>
-
-            {/* Predicted Overtime */}
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">
-                Predicted Overtime (Next Month)
-              </label>
-              <input
-                type="text"
-                placeholder="Predicted Overtime"
-                name="predictedOvertime"
-                value={formData.predictedOvertime}
-                readOnly
-                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
-              />
-            </div>
-            <div className="mt-2 ml-8">
-              <button
-                type="submit"
-                className="mt-4 py-2 px-4 bg-[#090367] text-white font-semibold rounded-md shadow-md hover:bg-[#EA0D10] transition-colors duration-200"
-              >
-                {isEditing ? "Update Overtime" : "Add Overtime"}
-              </button>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">
+              Employee's Name
+            </label>
+            <input
+              type="text"
+              placeholder="Employee's Name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
+              required
+            />
           </div>
-        </form>
 
-        {/* Employees List */}
-        <div className="overflow-x-auto bg-white rounded-lg shadow-md table-container">
-          <table className="min-w-full bg-white shadow-md rounded-lg">
-            <thead className="bg-gray-100">
-              <tr className="bg-[#090367] text-white text-xs sm:text-sm leading-normal">
-                <th className="border px-4 sm:px-6 py-2">Employee Name</th>
-                <th className="border px-4 sm:px-6 py-2">Position</th>
-                <th className="border px-4 sm:px-6 py-2">Base Salary</th>
-                <th className="border px-4 sm:px-6 py-2">Overtime Hours</th>
-                <th className="border px-4 sm:px-6 py-2">Total Salary</th>
-                <th className="border px-4 sm:px-6 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody className=" text-xs sm:text-sm">
-              {filteredEmployees.length > 0 ? (
-                filteredEmployees.map((employee, index) => (
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">
+              Employee's Position
+            </label>
+            <select
+              name="position"
+              value={formData.position}
+              onChange={(e) =>
+                setFormData({ ...formData, position: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
+              required
+            >
+              <option value="">Choose a Position</option>
+              {positions.map((position) => (
+                <option key={position.position} value={position.position}>
+                  {position.position}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">
+              Overtime Hours
+            </label>
+            <input
+              type="number"
+              placeholder="Overtime Hours"
+              name="overtimeHours"
+              value={formData.overtimeHours}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">
+              Predicted OT Hours (Next Month)
+            </label>
+            <input
+              type="text"
+              placeholder="Predicted OT Hours"
+              name="predictedOvertimeHours"
+              value={formData.predictedOvertimeHours}
+              readOnly
+              className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
+            />
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              name="approved"
+              checked={formData.approved}
+              onChange={handleChange}
+              className="mr-2"
+            />
+            <label className="text-sm font-medium text-gray-700">
+              Approved by Supervisor
+            </label>
+          </div>
+
+          <div className="mt-2 ml-8">
+            <button
+              type="submit"
+              className="mt-4 py-2 px-4 bg-[white] text-black font-semibold rounded-md shadow-md hover:bg-[#304994] hover:text-white transition-colors duration-200"
+            >
+              {isEditing ? "Update Overtime" : "Add Overtime"}
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div className="flex flex-col md:flex-row md:space-x-4 mb-4">
+        <div className="flex-1">
+          <label className="block text-sm font-semibold mb-1 text-gray-800">
+            Search Employee
+          </label>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search Employee's Name"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-semibold mb-1 text-gray-800">
+            Filter by Position
+          </label>
+          <select
+            value={selectedPosition}
+            onChange={(e) => setSelectedPosition(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
+          >
+            <option value="">All Positions</option>
+            {positions.map((position) => (
+              <option key={position.position} value={position.position}>
+                {position.position}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Employees List */}
+      <div className="overflow-x-auto bg-white rounded-lg shadow-md table-container">
+        <table className="min-w-full bg-white shadow-md rounded-lg">
+          <thead className="bg-gray-100">
+            <tr className="bg-[white] text-black text-xs sm:text-sm leading-normal">
+              <th className="border px-4 sm:px-6 py-2">Employee No.</th>
+              <th className="border px-4 sm:px-6 py-2">Employee's Name</th>
+              <th className="border px-4 sm:px-6 py-2">Position</th>
+              <th className="border px-4 sm:px-6 py-2">Overtime Hours</th>
+              <th className="border px-4 sm:px-6 py-2">Predicted OT Hours</th>
+              <th className="border px-4 sm:px-6 py-2">
+                Approved by Supervisor
+              </th>{" "}
+              {/* New Column */}
+              <th className="border px-4 sm:px-6 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="text-xs sm:text-sm ">
+            {filteredEmployees.length > 0 ? (
+              filteredEmployees.map((employee, index) => {
+                const predictedOTHours = calculatePredictedOvertimeHours(
+                  employee.overtimeHours
+                );
+
+                return (
                   <tr
                     key={employee._id}
                     className="text-xs sm:text-sm bg-white hover:bg-gray-100"
                   >
+                    <td className="border border-gray-300 p-2">
+                      {employee.employeeNo}
+                    </td>
                     <td className="border border-gray-300 p-2">
                       {employee.name}
                     </td>
@@ -374,15 +420,23 @@ const OvertimeManagement = () => {
                       {employee.position}
                     </td>
                     <td className="border border-gray-300 p-2">
-                      {formatCurrency(employee.baseSalary)}
+                      {employee.overtimeHours} Hours
                     </td>
                     <td className="border border-gray-300 p-2">
-                      {employee.overtimeHours}
+                      {predictedOTHours} Hours (Next Month)
                     </td>
                     <td className="border border-gray-300 p-2">
-                      {formatCurrency(employee.totalSalary)}
+                      <span
+                        className={`font-bold ${
+                          employee.approved
+                            ? "bg-green-100 text-green-600 "
+                            : "bg-yellow-100 text-yellow-600 "
+                        } px-2 py-1 rounded w-full`}
+                      >
+                        {employee.approved ? "Approved" : "Pending"}
+                      </span>
                     </td>
-                    <td className="border border-gray-300 p-2 flex justify-center">
+                    <td className="border border-gray-300 p-2">
                       <button
                         onClick={() => handleEdit(index)}
                         className="text-blue-500 hover:text-[#090367]"
@@ -397,24 +451,31 @@ const OvertimeManagement = () => {
                       </button>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="text-center py-4 text-sm">
-                    No Employee Found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={7} className="text-center py-4 text-sm">
+                  No Employee Found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-        {/* Edit Modal */}
-        <Modal
-          open={openEditModal}
-          onClose={() => setOpenEditModal(false)}
-          aria-labelledby="modal-modal-title"
-          aria-describedby="modal-modal-description"
+      {/* Edit Modal */}
+      <Modal
+        open={openEditModal}
+        onClose={() => setOpenEditModal(false)}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.3 }}
         >
           <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-24">
             <h2 className="text-2xl font-bold text-center mb-4">
@@ -437,18 +498,9 @@ const OvertimeManagement = () => {
                 <select
                   name="position"
                   value={formData.position}
-                  onChange={(e) => {
-                    const selectedPosition = positions.find(
-                      (pos) => pos.position === e.target.value
-                    );
-                    setFormData({
-                      ...formData,
-                      position: e.target.value,
-                      baseSalary: selectedPosition
-                        ? selectedPosition.baseSalary
-                        : 0,
-                    });
-                  }}
+                  onChange={(e) =>
+                    setFormData({ ...formData, position: e.target.value })
+                  }
                   className="border border-gray-300 rounded p-2 w-full"
                   required
                 >
@@ -471,10 +523,38 @@ const OvertimeManagement = () => {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <label className="font-bold">
+                  Predicted OT Hours (Next Month)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Predicted OT Hours"
+                  value={calculatePredictedOvertimeHours(
+                    formData.overtimeHours
+                  )}
+                  readOnly
+                  className="border border-gray-300 rounded p-2 w-full bg-gray-100"
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="approved"
+                  checked={formData.approved}
+                  onChange={handleChange}
+                  className="mr-2"
+                />
+                <label className="text-sm font-medium text-gray-700">
+                  Approved by Supervisor
+                </label>
+              </div>
+
               <div className="flex justify-between items-center">
                 <button
                   type="submit"
-                  className="bg-[#090367] font-bold text-white rounded px-4 py-2"
+                  className="hover:bg-[#304994] hover:text-white font-bold text-black rounded px-4 py-2"
                 >
                   Update Overtime
                 </button>
@@ -488,14 +568,21 @@ const OvertimeManagement = () => {
               </div>
             </form>
           </Box>
-        </Modal>
+        </motion.div>
+      </Modal>
 
-        {/* Delete Modal */}
-        <Modal
-          open={openDeleteModal}
-          onClose={() => setOpenDeleteModal(false)}
-          aria-labelledby="modal-modal-title"
-          aria-describedby="modal-modal-description"
+      {/* Delete Modal */}
+      <Modal
+        open={openDeleteModal}
+        onClose={() => setOpenDeleteModal(false)}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.3 }}
         >
           <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-80">
             <h2 className="text-2xl font-bold text-center mb-4">
@@ -516,12 +603,12 @@ const OvertimeManagement = () => {
               </button>
             </div>
           </Box>
-        </Modal>
+        </motion.div>
+      </Modal>
 
-        <footer className="bg-white mt-36 p-4 rounded-md shadow-md">
-          <p>2024 Hospital Management System. All Rights Reserved.</p>
-        </footer>
-      </div>
+      <footer className="bg-white mt-36 p-4 rounded-md shadow-md">
+        <p>2024 Hospital Management System. All Rights Reserved.</p>
+      </footer>
     </div>
   );
 };

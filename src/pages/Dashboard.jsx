@@ -17,7 +17,6 @@ import WbSunnyIcon from "@mui/icons-material/WbSunny";
 import FlagIcon from "@mui/icons-material/Flag";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
-import CancelIcon from "@mui/icons-material/Cancel";
 
 ChartJS.register(
   CategoryScale,
@@ -33,18 +32,28 @@ const Dashboard = () => {
   const [shiftCounts, setShiftCounts] = useState({});
   const [leaveCounts, setLeaveCounts] = useState({});
   const [overtimeData, setOvertimeData] = useState({ labels: [], data: [] });
+  const [predictedOvertimeData, setPredictedOvertimeData] = useState({ labels: [], data: [] });
+  const [predictedSalaryData, setPredictedSalaryData] = useState({ labels: [], data: [] });
   const [benefitsData, setBenefitsData] = useState({
-    labels: ["SSS", "Pag-Ibig", "PhilHealth", "Paid Leave", "13th Month"],
+    labels: [
+      "SSS, Pag-Ibig, Philhealth", 
+      "Hazard Pay", 
+      "Holiday Incentives", 
+      "Paid Leave", 
+      "13th Month", 
+      "Retirement"
+    ],
     datasets: [
       {
         label: "Benefits",
-        data: [0, 0, 0, 0, 0], // Initialize with zeros
+        data: [0, 0, 0, 0, 0, 0],
         backgroundColor: [
           "rgba(0, 47, 108, 1)",
           "rgba(255, 204, 0, 1)",
           "rgba(0, 128, 0, 1)",
           "rgba(205, 127, 50, 1)",
           "rgba(147, 112, 219, 1)",
+          "rgba(255, 99, 132, 1)",
         ],
         borderColor: [
           "rgba(0, 47, 108, 1)",
@@ -52,28 +61,22 @@ const Dashboard = () => {
           "rgba(0, 128, 0, 1)",
           "rgba(205, 127, 50, 1)",
           "rgba(147, 112, 219, 1)",
+          "rgba(255, 99, 132, 1)",
         ],
         borderWidth: 1,
       },
     ],
   });
-  const [ratingsData, setRatingsData] = useState({
-    labels: [],
-    datasets: [
-      {
-        label: "Incentives Ratings",
-        data: [],
-        backgroundColor: "rgba(153, 102, 255, 0.6)",
-        borderColor: "rgba(153, 102, 255, 1)",
-        borderWidth: 1,
-      },
-    ],
-  });
+
+  // New state for incentives eligibility
+  const [eligibleCount, setEligibleCount] = useState(0);
+  const [notEligibleCount, setNotEligibleCount] = useState(0);
+  const [eligibleEmployees, setEligibleEmployees] = useState([]); // New state for eligible employees
 
   useEffect(() => {
     const fetchShiftCounts = async () => {
       try {
-        const response = await fetch("http://localhost:8059/shifts");
+        const response = await fetch("https://backendhr4.vercel.app/shifts");
         const data = await response.json();
         const counts = data.reduce((acc, shift) => {
           const { shiftType } = shift;
@@ -88,7 +91,7 @@ const Dashboard = () => {
 
     const fetchLeaveCounts = async () => {
       try {
-        const response = await fetch("http://localhost:8059/leaves");
+        const response = await fetch("https://backendhr4.vercel.app/leaves");
         const data = await response.json();
         const counts = data.reduce((acc, leave) => {
           const { status } = leave;
@@ -103,7 +106,7 @@ const Dashboard = () => {
 
     const fetchOvertimeData = async () => {
       try {
-        const response = await fetch("http://localhost:8059/overtimes");
+        const response = await fetch("https://backendhr4.vercel.app/overtimes");
         const data = await response.json();
         const sortedData = data
           .sort((a, b) => b.overtimeHours - a.overtimeHours)
@@ -121,19 +124,62 @@ const Dashboard = () => {
       }
     };
 
+    const fetchPredictedOvertimeData = async () => {
+      try {
+        const response = await fetch("https://backendhr4.vercel.app/overtimes");
+        const data = await response.json();
+        const sortedData = data
+          .sort((a, b) => b.overtimeHours - a.overtimeHours)
+          .slice(0, 4);
+
+        const labels = sortedData.map(item => item.name);
+        const predictedOvertimeHours = sortedData.map(item => 
+          Math.round(item.overtimeHours * 1.10) // Assuming a 10% increase
+        );
+
+        setPredictedOvertimeData({
+          labels,
+          data: predictedOvertimeHours,
+        });
+      } catch (error) {
+        console.error("Error fetching predicted overtime data:", error);
+      }
+    };
+
+    const fetchPredictedSalaryData = async () => {
+      try {
+        const response = await fetch("https://backendhr4.vercel.app/overtimes");
+        const data = await response.json();
+        const sortedData = data
+          .sort((a, b) => b.totalSalary - a.totalSalary)
+          .slice(0, 4);
+
+        const labels = sortedData.map(item => item.name);
+        const predictedSalaries = sortedData.map(item => 
+          item.totalSalary * 1.05 // Assuming a 5% increase
+        );
+
+        setPredictedSalaryData({
+          labels,
+          data: predictedSalaries,
+        });
+      } catch (error) {
+        console.error("Error fetching predicted salary data:", error);
+      }
+    };
+
     const fetchBenefitsData = async () => {
       try {
-        const response = await fetch("http://localhost:8059/benefits");
+        const response = await fetch("https://backendhr4.vercel.app/benefits");
         const data = await response.json();
 
-        // Extracting the required benefit values
         const sssCount = data.reduce((acc, benefit) => acc + benefit.sss, 0);
-        const pagIbigCount = data.reduce((acc, benefit) => acc + benefit.pagIbig, 0);
-        const philHealthCount = data.reduce((acc, benefit) => acc + benefit.philHealth, 0);
+        const hazardPayCount = data.reduce((acc, benefit) => acc + benefit.hazardPay, 0);
+        const holidayIncentivesCount = data.reduce((acc, benefit) => acc + benefit.holidayIncentives, 0);
         const leaveCount = data.reduce((acc, benefit) => acc + benefit.leave, 0);
         const thirteenthMonthCount = data.reduce((acc, benefit) => acc + benefit.thirteenthMonth, 0);
+        const retirementCount = data.reduce((acc, benefit) => acc + benefit.retirement, 0);
 
-        // Update the benefits chart data
         setBenefitsData(prevState => ({
           ...prevState,
           datasets: [
@@ -141,10 +187,11 @@ const Dashboard = () => {
               ...prevState.datasets[0],
               data: [
                 sssCount,
-                pagIbigCount,
-                philHealthCount,
+                hazardPayCount,
+                holidayIncentivesCount,
                 leaveCount,
                 thirteenthMonthCount,
+                retirementCount,
               ],
             },
           ],
@@ -157,32 +204,13 @@ const Dashboard = () => {
     // New function to fetch incentives data
     const fetchIncentivesData = async () => {
       try {
-        const response = await fetch("http://localhost:8059/incentives");
+        const response = await fetch("https://backendhr4.vercel.app/incentives");
         const data = await response.json();
 
-        // Extracting names and incentives for the ratings graph
-        const incentivesData = data.map(item => ({
-          name: item.name,
-          incentives: item.incentives,
-        }));
-
-        // Sort by incentives and get top 4
-        const topIncentives = incentivesData
-          .sort((a, b) => b.incentives - a.incentives)
-          .slice(0, 4);
-
-        const names = topIncentives.map(item => item.name);
-        const incentives = topIncentives.map(item => item.incentives);
-
-        setRatingsData({
-          labels: names,
-          datasets: [
-            {
-              ...ratingsData.datasets[0],
-              data: incentives,
-            },
-          ],
-        });
+        const eligibleEmployeesList = data.filter(emp => emp.attendance >= 15);
+        setEligibleEmployees(eligibleEmployeesList); // Set eligible employees
+        setEligibleCount(eligibleEmployeesList.length);
+        setNotEligibleCount(data.length - eligibleEmployeesList.length);
       } catch (error) {
         console.error("Error fetching incentives data:", error);
       }
@@ -191,6 +219,8 @@ const Dashboard = () => {
     fetchShiftCounts();
     fetchLeaveCounts();
     fetchOvertimeData();
+    fetchPredictedOvertimeData();
+    fetchPredictedSalaryData();
     fetchBenefitsData();
     fetchIncentivesData(); // Fetch incentives data on component mount
   }, []);
@@ -206,6 +236,13 @@ const Dashboard = () => {
         borderColor: "rgba(75, 192, 192, 1)",
         borderWidth: 1,
       },
+      {
+        label: "Predicted Overtime Hours (Next Month)",
+        data: predictedOvertimeData.data,
+        backgroundColor: "rgba(255, 159, 64, 0.6)",
+        borderColor: "rgba(255, 159, 64, 1)",
+        borderWidth: 1,
+      },
     ],
   };
 
@@ -219,20 +256,6 @@ const Dashboard = () => {
       title: {
         display: true,
         text: "Employee's Overtime Hours Graph",
-      },
-    },
-  };
-
-  const ratingsOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "top",
-      },
-      title: {
-        display: true,
-        text: "Employee's Incentives Ratings Graph",
       },
     },
   };
@@ -262,11 +285,12 @@ const Dashboard = () => {
         return "bg-yellow-200 text-yellow-800";
     }
   };
+
   return (
-    <div className="bg-[#F0F0F0]">
+    <div className="bg-[#F0F0F0] ">
       {/* Welcome Message */}
-      <div className="bg-white mt-16 p-6 rounded-md shadow-lg">
-        <p className="text-xl text-[#090367] font-semibold">Dashboard</p>
+      <div className="bg-white mt-8 p-6 rounded-md shadow-lg">
+        <p className="text-xl text-black font-bold">DASHBOARD</p>
       </div>
 
       <div className="bg-[#F0F0F0] grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
@@ -276,8 +300,24 @@ const Dashboard = () => {
           <div className="mb-4" style={{ height: "200px" }}>
             <Bar data={overtimeChartData} options={overtimeOptions} />
           </div>
-          <div className="mb-4" style={{ height: "200px" }}>
-            <Bar data={ratingsData} options={ratingsOptions} />
+
+          {/* Incentives Eligibility Section */}
+          <div className="mt-8 p-4 bg-white shadow-md rounded-lg">
+            <h3 className="text-lg font-semibold mb-4 mt-4 flex items-center">
+              <FaUsers className="mr-2" />
+              Incentives Eligibility
+            </h3>
+            <div className="flex justify-between mb-4">
+              <div>
+                <span className="font-semibold">Eligible Employees: </span>
+                <span className="text-green-600 text-medium">{eligibleCount}✅</span>
+              </div>
+              <div>
+                <span className="font-semibold">Not Eligible Employees: </span>
+                <span className="text-red-600 text-medium">{notEligibleCount}❌</span>
+              </div>
+            </div>
+            
           </div>
 
           {/* Shift Counts Display */}
@@ -300,7 +340,7 @@ const Dashboard = () => {
                       fontSize="large"
                     />
                   )}
-                  {shiftType === "Night Shift" && (
+                  {shiftType === "Graveyard Shift" && (
                     <NightlightIcon
                       className="mr-3 text-indigo-700"
                       fontSize="large"
@@ -327,7 +367,7 @@ const Dashboard = () => {
 
         {/* Benefits Section */}
         <div className="p-4 bg-white shadow-md rounded-lg">
-        <h2 className="text-2xl font-bold mb-2">Benefits</h2>
+          <h2 className="text-2xl font-bold mb-2">Benefits</h2>
           <div className="mb-4" style={{ height: "400px" }}>
             <Pie data={benefitsData} options={benefitsOptions} />
           </div>

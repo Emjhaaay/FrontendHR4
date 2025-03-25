@@ -23,14 +23,36 @@
   }
 }
 
-body {
-  @apply overflow-auto; /* Ensures body can scroll */
-  @apply m-0; /* Resets default margin */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.bg-background {
-  background-image: url('./images/bg.jpg'); /* Specify your background image path */
-  background-size: cover; /* Cover the entire viewport */
-  background-position: center; /* Center the background image */
+/* styles.css or your CSS file */
+html, body, #root {
+  height: 100%;
+  width: 100%;
 }
 
+.landing-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Full viewport height */
+  width: 100vw; /* Full viewport width */
+  background-color: #f0f0f0; /* Background color */
+  text-align: center; /* Center text */
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 1s ease-in forwards; /* Adjust duration and easing as needed */
+}

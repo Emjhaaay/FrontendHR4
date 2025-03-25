@@ -40,15 +40,15 @@ const Header = ({ toggleSidebar, onLogout }) => {
   };
 
   return (
-    <header className="fixed bg-[#090367] py-4 px-4 flex justify-between items-center transition-all duration-300 text-white w-full">
+    <header className="bg-[white] shadow-md rounded-lg  py-4 px-4 flex justify-between items-center transition-all duration-300 text-white w-full">
       {/* Sidebar Toggle Button */}
-      <IconButton onClick={toggleSidebar} sx={{ color: "white" }}>
+      <IconButton onClick={toggleSidebar} sx={{ color: "black" }}>
         <MenuIcon />
       </IconButton>
 
       {/* User Profile Dropdown */}
       <div className="relative">
-        <IconButton onClick={handleMenuClick} sx={{ color: "white" }}>
+        <IconButton onClick={handleMenuClick} sx={{ color: "black" }}>
           <AccountCircle />
           <ExpandMore sx={{ ml: 1, color: "white" }} />
         </IconButton>

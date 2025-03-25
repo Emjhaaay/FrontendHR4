@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
-import axios from "axios";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import axios from "axios";
 import Modal from "@mui/material/Modal"; // Import Modal
-import IconButton from '@mui/material/IconButton';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
 import Box from "@mui/material/Box"; // Import Box
+import Snackbar from "@mui/material/Snackbar"; // Import Snackbar
+import Alert from "@mui/material/Alert"; // Import Alert
+import { motion } from "framer-motion";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 
 const Leave = () => {
   const [leaves, setLeaves] = useState([]);
@@ -21,29 +23,69 @@ const Leave = () => {
     attachment: null,
   });
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterPosition, setFilterPosition] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [notification, setNotification] = useState({ message: "", type: "" });
+
+  // Snackbar state
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   // Modal states
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
-  const [openImageModal, setOpenImageModal] = useState(false); // New state for image modal
-  const [imageSrc, setImageSrc] = useState(""); // State to hold the image source
+  const [openImageModal, setOpenImageModal] = useState(false);
+  const [imageSrc, setImageSrc] = useState("");
 
   const positions = [
-    "Nurse",
-    "Doctor",
-    "Pharmacist",
+    "Medical Center Chief",
+    "Medical Specialist III",
+    "Chief of Hospital",
+    "Chief Nursing Officer",
+    "Chief Medical Officer",
+    "Chief Administrative Officer",
+    "Chief Financial Officer",
+    "Chief Information Officer",
+    "Medical Specialist II",
+    "Psychiatrist",
+    "Dentist",
+    "Information Technology Officer",
+    "Financial and Management Officer",
+    "Medical Officer IV",
+    "Chief Medical Technologist",
+    "Chief Pharmacist",
+    "Medical Officer III",
+    "Medical Officer II",
+    "Medical Officer I",
+    "Nurse 2",
+    "Nurse 3",
+    "Nurse 4",
+    "Medical Specialist I",
+    "Medical Technologist",
+    "HR Management Officer",
+    "Information Officer",
+    "Licensing Officer",
+    "Dietician/Nutritionist",
+    "Nurse 1",
+    "Psychologist",
+    "Health Physicist",
+    "Chemist",
     "Physical Therapist",
-    "Administrative Staff",
+    "Ward Assistant",
+    "Administrative Officer",
+    "Administrative Assistant",
+    "Administrative Aide",
+    "Medical Equipment Technician",
+    "Laboratory Aide",
   ];
+
   const leaveTypes = [
     "Sick Leave",
     "Vacation Leave",
     "Maternity Leave",
     "Paternity Leave",
+    "Solo Parent Leave",
   ];
 
   useEffect(() => {
@@ -58,6 +100,19 @@ const Leave = () => {
     };
     fetchLeaves();
   }, []);
+
+  useEffect(() => {
+    const filtered = leaves.filter((leave) => {
+      const matchesSearchTerm = leave.employeeName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesPosition = filterPosition
+        ? leave.employeePosition === filterPosition
+        : true;
+      return matchesSearchTerm && matchesPosition;
+    });
+    setFilteredLeaves(filtered);
+  }, [searchTerm, filterPosition, leaves]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -97,6 +152,11 @@ const Leave = () => {
             sickEndDate.setDate(today.getDate() + 4); // 5 days total
             updatedForm.endDate = sickEndDate.toISOString().split("T")[0];
             break;
+          case "Solo Parent Leave":
+            const soloParentEndDate = new Date(today);
+            soloParentEndDate.setDate(today.getDate() + 6); // 7 days total
+            updatedForm.endDate = soloParentEndDate.toISOString().split("T")[0];
+            break;
           default:
             updatedForm.endDate = ""; // Reset end date if no valid leave type is selected
         }
@@ -121,27 +181,15 @@ const Leave = () => {
           const sickEndDate = new Date(newStartDate);
           sickEndDate.setDate(newStartDate.getDate() + 4);
           updatedForm.endDate = sickEndDate.toISOString().split("T")[0];
+        } else if (prev.leaveType === "Solo Parent Leave") {
+          const soloParentEndDate = new Date(newStartDate);
+          soloParentEndDate.setDate(newStartDate.getDate() + 6);
+          updatedForm.endDate = soloParentEndDate.toISOString().split("T")[0];
         }
       }
 
       return updatedForm;
     });
-  };
-
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
-    const filtered = leaves.filter((leave) =>
-      leave.employeeName.toLowerCase().includes(e.target.value.toLowerCase())
-    );
-    setFilteredLeaves(filtered);
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
   };
 
   const handleSubmit = async (e) => {
@@ -174,11 +222,15 @@ const Leave = () => {
         });
         setEditingId(null);
       } else {
-        const response = await axios.post("http://localhost:8059/leaves", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        const response = await axios.post(
+          "http://localhost:8059/leaves",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
         setLeaves([...leaves, { ...form, _id: response.data._id }]);
         setFilteredLeaves([...leaves, { ...form, _id: response.data._id }]);
         setNotification({
@@ -196,11 +248,10 @@ const Leave = () => {
         attachment: null, // Reset attachment
       });
     } catch (error) {
-      setNotification({ message: "Error saving leave.", type: "error" });
+      console.error("Error saving leave:", error); // Log the error for debugging
+      setNotification({ message: "Error saving leave. Please try again.", type: "error" });
     }
-    setTimeout(() => {
-      setNotification({ message: "", type: "" });
-    }, 3000);
+    setSnackbarOpen(true); // Open Snackbar
   };
 
   const handleEdit = (leave) => {
@@ -223,11 +274,10 @@ const Leave = () => {
       });
       setOpenDeleteModal(false); // Close delete modal
     } catch (error) {
+      console.error("Error deleting leave:", error); // Log the error for debugging
       setNotification({ message: "Error deleting leave.", type: "error" });
     }
-    setTimeout(() => {
-      setNotification({ message: "", type: "" });
-    }, 3000);
+    setSnackbarOpen(true); // Open Snackbar
   };
 
   const handleOpenDeleteModal = (leaveId) => {
@@ -255,10 +305,13 @@ const Leave = () => {
   };
 
   const handleOpenImageModal = (attachment) => {
-    const imageUrl = `http://localhost:8059/uploads/${attachment}`;// Construct the image URL
-    console.log("Image URL:", imageUrl); // Log the URL to check if it's correct
-    setImageSrc(imageUrl); // Set the image source
-    setOpenImageModal(true); // Open the image modal
+    if (attachment) {
+      const imageUrl = `http://localhost:8059/uploads/${attachment}`; // Construct the image URL
+      setImageSrc(imageUrl); // Set the image source
+      setOpenImageModal(true); // Open the image modal
+    } else {
+      console.error("No attachment found for this leave.");
+    }
   };
 
   const handleCloseImageModal = () => {
@@ -278,26 +331,26 @@ const Leave = () => {
     }
   };
 
-  return (
-    <div className="bg-[#F0F0F0] mt-16">
-      <div className="bg-[#F0F0F0] md:grid-cols-2 gap-4 mt-8 p-4">
-        {notification.message && (
-          <div
-            className={`fixed top-30 right-5 p-4 border rounded flex items-center space-x-2 transition-opacity duration-500 ease-in-out  ${
-              notification.type === "success"
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {notification.type === "success" ? (
-              <FaCheckCircle />
-            ) : (
-              <FaExclamationCircle />
-            )}
-            <span>{notification.message}</span>
-          </div>
-        )}
+  // Snackbar close handler
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
 
+  return (
+    <div className="bg-[#F0F0F0]  p-6">
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }} // Positioning the Snackbar
+      >
+        <Alert onClose={handleSnackbarClose} severity={notification.type}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
+
+      <div>
         <form
           onSubmit={handleSubmit}
           className="bg-[white] shadow-md rounded-lg p-4 sm:p-3 mb-4 sm:mb-8"
@@ -307,18 +360,6 @@ const Leave = () => {
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">
-                Search employee
-              </label>
-              <input
-                type="text"
-                placeholder="Search Employee's Name"
-                value={searchQuery}
-                onChange={handleSearch}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#090367]"
-              />
-            </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">
                 Employee's Name
@@ -336,7 +377,7 @@ const Leave = () => {
 
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">
-                Position
+                Employee's Position
               </label>
               <select
                 name="employeePosition"
@@ -426,7 +467,7 @@ const Leave = () => {
             <div className="mt-2 ml-8">
               <button
                 type="submit"
-                className="mt-4 py-2 px-4 bg-[#090367] text-white font-semibold rounded-md shadow-md hover:bg-[#EA0D10] transition-colors duration-200"
+                className="mt-4 py-2 px-4 bg-[white] text-black font-semibold rounded-md shadow-md hover:bg-[#304994] hover:text-white transition-colors duration-200"
               >
                 {editingId ? "Update Leave" : "Add Leave"}
               </button>
@@ -434,79 +475,120 @@ const Leave = () => {
           </div>
         </form>
 
+        {/* Search and Filter Section */}
+        <div className="flex flex-col md:flex-row md:space-x-4 mb-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              Search Employee
+            </label>
+            <input
+              type="text"
+              placeholder="Search Employee's Name"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border border-gray-300 rounded p-2 mb-2 w-full focus:outline-none focus:ring-2 focus:ring-[#090367]"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              Filter by Position
+            </label>
+            <select
+              value={filterPosition}
+              onChange={(e) => setFilterPosition(e.target.value)}
+              className="border border-gray-300 rounded p-2 mb-2 w-full focus:outline-none focus:ring-2 focus:ring-[#090367]"
+            >
+              <option value="">All Positions</option>
+              {positions.map((pos) => (
+                <option key={pos} value={pos}>
+                  {pos}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="overflow-x-auto bg-white rounded-lg shadow-md table-container">
           <table className="min-w-full bg-white shadow-md rounded-lg">
             <thead className="bg-gray-100">
-              <tr className="bg-[#090367] text-white text-xs sm:text-sm leading-normal">
+              <tr className="bg-[white] text-black text-xs sm:text-sm leading-normal">
                 <th className="border px-4 sm:px-6 py-2">Employee's Name</th>
                 <th className="border px-4 sm:px-6 py-2">Position</th>
                 <th className="border px-4 sm:px-6 py-2">Leave Type</th>
                 <th className="border px-4 sm:px-6 py-2">Start Date</th>
                 <th className="border px-4 sm:px-6 py-2">End Date</th>
                 <th className="border px-4 sm:px-6 py-2">Status</th>
-                <th className="border px-4 sm:px-6 py-2">Attachment <AttachFileIcon /></th>
+                <th className="border px-4 sm:px-6 py-2">
+                  Attachment <AttachFileIcon />
+                </th>
                 <th className="border px-4 sm:px-6 py-2">Actions</th>
               </tr>
             </thead>
             <tbody className="text-xs sm:text-sm">
-              {filteredLeaves.length > 0 ? (
-                filteredLeaves.map((leave) => (
-                  <tr
-                    key={leave._id}
-                    className="text-xs sm:text-sm bg-white hover:bg-gray-100"
-                  >
-                    <td className="border border-gray-300 p-2">
-                      {leave.employeeName}
-                    </td>
-                    <td className="border border-gray-300 p-2">
-                      {leave.employeePosition}
-                    </td>
-                    <td className="border border-gray-300 p-2">
-                      {leave.leaveType}
-                    </td>
-                    <td className="border border-gray-300 p-2">
-                      {formatDate(leave.startDate)}
-                    </td>
-                    <td className="border border-gray-300 p-2">
-                      {formatDate(leave.endDate)}
-                    </td>
-                    <td
-                      className={`border border-gray-300 p-2 ${getStatusColor(
-                        leave.status
-                      )}`}
-                    >
-                      {leave.status}
-                    </td>
-                    <td className="border border-gray-300 p-2">
-                      {leave.attachment && (
-                        <button
-                          onClick={() => handleOpenImageModal(leave.attachment)}
-                          className="text-blue-500 hover:underline"
-                        >
-                          View Medical Certificate
-                        </button>
-                      )}
-                    </td>
-                    <td className="border border-gray-300 p-2 flex justify-center">
-                      <EditIcon
-                        onClick={() => handleEdit(leave)}
-                        className="cursor-pointer text-blue-500 hover:text-[#090367]"
-                      />
-                      <DeleteIcon
-                        onClick={() => handleOpenDeleteModal(leave._id)}
-                        className="cursor-pointer text-red-500 hover:text-[#EA0D10]"
-                      />
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="text-center py-4">
-                    No Employee Found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
+  {filteredLeaves.length > 0 ? (
+    filteredLeaves.map((leave) => (
+      <tr
+        key={leave._id}
+        className="text-xs sm:text-sm bg-white hover:bg-gray-100"
+      >
+        <td className="border border-gray-300 p-2">
+          {leave.employeeName}
+        </td>
+        <td className="border border-gray-300 p-2">
+          {leave.employeePosition}
+        </td>
+        <td className="border border-gray-300 p-2">
+          {leave.leaveType}
+        </td>
+        <td className="border border-gray-300 p-2">
+          {new Date(leave.startDate).toLocaleDateString()}
+        </td>
+        <td className="border border-gray-300 p-2">
+          {new Date(leave.endDate).toLocaleDateString()}
+        </td>
+        <td className="border border-gray-300 p-2">
+          <span
+            className={`font-bold ${
+              leave.status === "Approved"
+                ? "bg-green-100 text-green-600"
+                : leave.status === "Rejected"
+                ? "bg-red-100 text-red-600"
+                : "bg-yellow-100 text-yellow-600"
+            } px-2 py-1 rounded w-full`}
+          >
+            {leave.status}
+          </span>
+        </td>
+        <td className="border border-gray-300 p-2">
+          {leave.attachment && (
+            <button
+              onClick={() => handleOpenImageModal(leave.attachment)}
+              className="text-blue-500 hover:underline"
+            >
+              View Attachment
+            </button>
+          )}
+        </td>
+        <td className="border border-gray-300 p-2 flex justify-center">
+          <EditIcon
+            onClick={() => handleEdit(leave)}
+            className="cursor-pointer text-blue-500 hover:text-[#090367]"
+          />
+          <DeleteIcon
+            onClick={() => handleOpenDeleteModal(leave._id)}
+            className="cursor-pointer text-red-500 hover:text-[#EA0D10]"
+          />
+        </td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan="8" className="text-center py-4">
+        No Employee Found.
+      </td>
+    </tr>
+  )}
+</tbody>
           </table>
         </div>
       </div>
@@ -519,20 +601,20 @@ const Leave = () => {
         aria-describedby="image-modal-description"
       >
         <Box className="bg-white p-6 rounded-md max-w-lg mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-4">Medical Certificate</h2>
-          <img 
-            src={imageSrc} 
-            alt="Attachment" 
-            className="w-full h-auto" 
+          <h2 className="text-2xl font-bold text-center mb-4">Attachment</h2>
+          <img
+            src={imageSrc}
+            alt="Attachment"
+            className="w-full h-auto"
             onError={(e) => {
               e.target.onerror = null; // Prevent looping
-              e.target.src = 'path/to/default/image.png'; // Set a default image or handle error
-            }} 
+              e.target.src = "path/to/default/image.png"; // Set a default image or handle error
+            }}
           />
           <div className="flex justify-center mt-4">
             <button
               onClick={handleCloseImageModal}
-              className="bg-gray-300 text-black rounded px-4 py-2"
+              className="bg-gray-300 text-black hover:bg-[#304994] hover:text-white rounded px-4 py-2"
             >
               Close
             </button>
@@ -547,116 +629,123 @@ const Leave = () => {
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <Box className="bg-white p-6 rounded-md max-w-lg mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-4">
-            Edit Employee's Leave
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="font-bold">Employee's Name</label>
-              <input
-                type="text"
-                name="employeeName"
-                value={form.employeeName}
-                onChange={handleChange}
-                className="border border-gray-300 rounded p-2 w-full"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="font-bold">Employee's Position</label>
-              <select
-                name="employeePosition"
-                value={form.employeePosition}
-                onChange={handleChange}
-                className="border border-gray-300 rounded p-2 w-full"
-                required
-              >
-                <option value="">Select Position</option>
-                {positions.map((position, index) => (
-                  <option key={index} value={position}>
-                    {position}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="font-bold">Leave Type</label>
-              <select
-                name="leaveType"
-                value={form.leaveType}
-                onChange={handleChange}
-                className="border border-gray-300 rounded p-2 w-full"
-                required
-              >
-                <option value="">Choose a leave type</option>
-                {leaveTypes.map((type, index) => (
-                  <option key={index} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="font-bold">Start Date</label>
-              <input
-                type="date"
-                name="startDate"
-                value={form.startDate}
-                onChange={handleChange}
-                className="border border-gray-300 rounded p-2 w-full"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="font-bold">End Date</label>
-              <input
-                type="date"
-                name="endDate"
-                value={form.endDate}
-                onChange={handleChange}
-                className="border border-gray-300 rounded p-2 w-full"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="font-bold">Status</label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="border border-gray-300 rounded p-2 w-full"
-              >
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="font-bold">Attachment</label>
-              <input
-                type="file"
-                name="attachment"
-                onChange={handleChange}
-                className="border border-gray-300 rounded p-2 w-full"
-              />
-            </div>
-            <div className="flex justify-between items-center">
-              <button
-                type="submit"
-                className="bg-[#090367] font-bold text-white rounded px-4 py-2"
-              >
-                Update Leave
-              </button>
-              <button
-                type="button"
-                onClick={handleCloseEditModal}
-                className="text-gray-600 font-bold hover:text-gray-800"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </Box>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Box className="bg-white p-6 rounded-md max-w-lg mx-auto">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              Edit Employee's Leave
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="font-bold">Employee's Name</label>
+                <input
+                  type="text"
+                  name="employeeName"
+                  value={form.employeeName}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">Employee's Position</label>
+                <select
+                  name="employeePosition"
+                  value={form.employeePosition}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                >
+                  <option value="">Select Position</option>
+                  {positions.map((position, index) => (
+                    <option key={index} value={position}>
+                      {position}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">Leave Type</label>
+                <select
+                  name="leaveType"
+                  value={form.leaveType}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                >
+                  <option value="">Choose a leave type</option>
+                  {leaveTypes.map((type, index) => (
+                    <option key={index} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">Start Date</label>
+                <input
+                  type="date"
+                  name="startDate"
+                  value={form.startDate}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">End Date</label>
+                <input
+                  type="date"
+                  name="endDate"
+                  value={form.endDate}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">Status</label>
+                <select
+                  name="status"
+                  value={form.status}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="font-bold">Attachment</label>
+                <input
+                  type="file"
+                  name="attachment"
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <button
+                  type="submit"
+                  className="hover:bg-[#304994] hover:text-white font-bold text-black  rounded px-4 py-2"
+                >
+                  Update Leave
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseEditModal}
+                  className="text-gray-600 font-bold hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </Box>
+        </motion.div>
       </Modal>
 
       {/* Delete Modal */}
@@ -666,25 +755,32 @@ const Leave = () => {
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-80">
-          <h2 className="text-2xl font-bold text-center mb-4">
-            Are you sure you want to delete this employee's leave?
-          </h2>
-          <div className="flex justify-between items-center">
-            <button
-              onClick={handleDelete}
-              className="bg-red-600 text-white rounded px-4 py-2"
-            >
-              Yes, Delete
-            </button>
-            <button
-              onClick={() => setOpenDeleteModal(false)}
-              className="bg-gray-300 text-black rounded px-4 py-2"
-            >
-              Cancel
-            </button>
-          </div>
-        </Box>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Box className="bg-white p-6 rounded-md max-w-lg mx-auto mt-80">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              Are you sure you want to delete this employee's leave?
+            </h2>
+            <div className="flex justify-between items-center">
+              <button
+                onClick={handleDelete}
+                className="bg-red-600 text-white rounded px-4 py-2"
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setOpenDeleteModal(false)}
+                className="bg-gray-300 text-black rounded px-4 py-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </Box>
+        </motion.div>
       </Modal>
 
       <footer className="bg-white mt-32 p-4 rounded-md shadow-md">
