@@ -14,6 +14,7 @@ const Leave = () => {
   const [leaves, setLeaves] = useState([]);
   const [filteredLeaves, setFilteredLeaves] = useState([]);
   const [form, setForm] = useState({
+    employeeNo: "", // New field for employee number
     employeeName: "",
     employeePosition: "",
     leaveType: "",
@@ -239,6 +240,7 @@ const Leave = () => {
         });
       }
       setForm({
+        employeeNo: "", // Reset employeeNo
         employeeName: "",
         employeePosition: "",
         leaveType: "",
@@ -249,7 +251,10 @@ const Leave = () => {
       });
     } catch (error) {
       console.error("Error saving leave:", error); // Log the error for debugging
-      setNotification({ message: "Error saving leave. Please try again.", type: "error" });
+      setNotification({
+        message: "Error saving leave. Please try again.",
+        type: "error",
+      });
     }
     setSnackbarOpen(true); // Open Snackbar
   };
@@ -289,6 +294,7 @@ const Leave = () => {
     setOpenEditModal(false);
     setEditingId(null);
     setForm({
+      employeeNo: "", // Reset employeeNo
       employeeName: "",
       employeePosition: "",
       leaveType: "",
@@ -339,11 +345,16 @@ const Leave = () => {
   return (
     <div className="bg-[#F0F0F0]  p-6">
       {/* Snackbar for notifications */}
+       <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+            >
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }} // Positioning the Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "right" }} // Positioning the Snackbar
       >
         <Alert onClose={handleSnackbarClose} severity={notification.type}>
           {notification.message}
@@ -512,6 +523,7 @@ const Leave = () => {
           <table className="min-w-full bg-white shadow-md rounded-lg">
             <thead className="bg-gray-100">
               <tr className="bg-[white] text-black text-xs sm:text-sm leading-normal">
+                <th className="border px-4 sm:px-6 py-2">Employee No</th>
                 <th className="border px-4 sm:px-6 py-2">Employee's Name</th>
                 <th className="border px-4 sm:px-6 py-2">Position</th>
                 <th className="border px-4 sm:px-6 py-2">Leave Type</th>
@@ -525,70 +537,73 @@ const Leave = () => {
               </tr>
             </thead>
             <tbody className="text-xs sm:text-sm">
-  {filteredLeaves.length > 0 ? (
-    filteredLeaves.map((leave) => (
-      <tr
-        key={leave._id}
-        className="text-xs sm:text-sm bg-white hover:bg-gray-100"
-      >
-        <td className="border border-gray-300 p-2">
-          {leave.employeeName}
-        </td>
-        <td className="border border-gray-300 p-2">
-          {leave.employeePosition}
-        </td>
-        <td className="border border-gray-300 p-2">
-          {leave.leaveType}
-        </td>
-        <td className="border border-gray-300 p-2">
-          {new Date(leave.startDate).toLocaleDateString()}
-        </td>
-        <td className="border border-gray-300 p-2">
-          {new Date(leave.endDate).toLocaleDateString()}
-        </td>
-        <td className="border border-gray-300 p-2">
-          <span
-            className={`font-bold ${
-              leave.status === "Approved"
-                ? "bg-green-100 text-green-600"
-                : leave.status === "Rejected"
-                ? "bg-red-100 text-red-600"
-                : "bg-yellow-100 text-yellow-600"
-            } px-2 py-1 rounded w-full`}
-          >
-            {leave.status}
-          </span>
-        </td>
-        <td className="border border-gray-300 p-2">
-          {leave.attachment && (
-            <button
-              onClick={() => handleOpenImageModal(leave.attachment)}
-              className="text-blue-500 hover:underline"
-            >
-              View Attachment
-            </button>
-          )}
-        </td>
-        <td className="border border-gray-300 p-2 flex justify-center">
-          <EditIcon
-            onClick={() => handleEdit(leave)}
-            className="cursor-pointer text-blue-500 hover:text-[#090367]"
-          />
-          <DeleteIcon
-            onClick={() => handleOpenDeleteModal(leave._id)}
-            className="cursor-pointer text-red-500 hover:text-[#EA0D10]"
-          />
-        </td>
-      </tr>
-    ))
-  ) : (
-    <tr>
-      <td colSpan="8" className="text-center py-4">
-        No Employee Found.
-      </td>
-    </tr>
-  )}
-</tbody>
+              {filteredLeaves.length > 0 ? (
+                filteredLeaves.map((leave) => (
+                  <tr
+                    key={leave._id}
+                    className="text-xs sm:text-sm bg-white hover:bg-gray-100"
+                  >
+                    <td className="border border-gray-300 p-2">
+                      {leave.employeeNo}
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      {leave.employeeName}
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      {leave.employeePosition}
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      {leave.leaveType}
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      {new Date(leave.startDate).toLocaleDateString()}
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      {new Date(leave.endDate).toLocaleDateString()}
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      <span
+                        className={`font-bold ${
+                          leave.status === "Approved"
+                            ? "bg-green-100 text-green-600"
+                            : leave.status === "Rejected"
+                            ? "bg-red-100 text-red-600"
+                            : "bg-yellow-100 text-yellow-600"
+                        } px-2 py-1 rounded w-full`}
+                      >
+                        {leave.status}
+                      </span>
+                    </td>
+                    <td className="border border-gray-300 p-2">
+                      {leave.attachment && (
+                        <button
+                          onClick={() => handleOpenImageModal(leave.attachment)}
+                          className="text-blue-500 hover:underline"
+                        >
+                          View Attachment
+                        </button>
+                      )}
+                    </td>
+                    <td className="border border-gray-300 p-2 flex justify-center">
+                      <EditIcon
+                        onClick={() => handleEdit(leave)}
+                        className="cursor-pointer text-blue-500 hover:text-[#090367]"
+                      />
+                      <DeleteIcon
+                        onClick={() => handleOpenDeleteModal(leave._id)}
+                        className="cursor-pointer text-red-500 hover:text-[#EA0D10]"
+                      />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="9" className="text-center py-4">
+                    No Employee Found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
           </table>
         </div>
       </div>
@@ -635,11 +650,24 @@ const Leave = () => {
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.3 }}
         >
-          <Box className="bg-white p-6 rounded-md max-w-lg mx-auto">
+          <Box className="bg-white p-6 rounded-md max-w-2xl mx-auto">
+            {" "}
+            {/* Increased size to max-w-2xl */}
             <h2 className="text-2xl font-bold text-center mb-4">
               Edit Employee's Leave
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="font-bold">Employee No.</label>
+                <input
+                  type="text"
+                  name="employeeNo"
+                  value={form.employeeNo}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <label className="font-bold">Employee's Name</label>
                 <input
@@ -685,28 +713,33 @@ const Leave = () => {
                   ))}
                 </select>
               </div>
-              <div className="space-y-2">
-                <label className="font-bold">Start Date</label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={form.startDate}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded p-2 w-full"
-                  required
-                />
+
+              {/* Start Date and End Date Side by Side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="font-bold">Start Date</label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={form.startDate}
+                    onChange={handleChange}
+                    className="border border-gray-300 rounded p-2 w-full"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="font-bold">End Date</label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    value={form.endDate}
+                    onChange={handleChange}
+                    className="border border-gray-300 rounded p-2 w-full"
+                    required
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="font-bold">End Date</label>
-                <input
-                  type="date"
-                  name="endDate"
-                  value={form.endDate}
-                  onChange={handleChange}
-                  className="border border-gray-300 rounded p-2 w-full"
-                  required
-                />
-              </div>
+
               <div className="space-y-2">
                 <label className="font-bold">Status</label>
                 <select
@@ -731,7 +764,7 @@ const Leave = () => {
               <div className="flex justify-between items-center">
                 <button
                   type="submit"
-                  className="hover:bg-[#304994] hover:text-white font-bold text-black  rounded px-4 py-2"
+                  className="hover:bg-[#304994] hover:text-white font-bold text-black rounded px-4 py-2"
                 >
                   Update Leave
                 </button>
@@ -784,8 +817,9 @@ const Leave = () => {
       </Modal>
 
       <footer className="bg-white mt-32 p-4 rounded-md shadow-md">
-        <p>2024 Hospital Management System. All Rights Reserved.</p>
+      <p>&copy; {new Date().getFullYear()} Nodado General Hospital. All rights reserved.</p>
       </footer>
+      </motion.div>
     </div>
   );
 };

@@ -13,6 +13,7 @@ import "/src/index.css";
 const OvertimeManagement = () => {
   const [employees, setEmployees] = useState([]);
   const [formData, setFormData] = useState({
+    employeeNo: "", // New field for employee number
     name: "",
     position: "",
     overtimeHours: 0,
@@ -122,13 +123,14 @@ const OvertimeManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { name, position, overtimeHours, approved } = formData;
+    const { employeeNo, name, position, overtimeHours, approved } = formData;
 
     try {
       if (isEditing) {
         await axios.put(
           `http://localhost:8059/overtimes/${employees[currentIndex]._id}`,
           {
+            employeeNo, // Include employeeNo in the update
             name,
             position,
             overtimeHours,
@@ -141,6 +143,7 @@ const OvertimeManagement = () => {
         });
       } else {
         await axios.post("http://localhost:8059/overtimes", {
+          employeeNo, // Include employeeNo in the new employee
           name,
           position,
           overtimeHours,
@@ -161,6 +164,7 @@ const OvertimeManagement = () => {
     }
 
     setFormData({
+      employeeNo: "", // Reset employeeNo
       name: "",
       position: "",
       overtimeHours: 0,
@@ -177,6 +181,7 @@ const OvertimeManagement = () => {
   const handleEdit = (index) => {
     const employee = employees[index];
     setFormData({
+      employeeNo: employee.employeeNo, // Set employeeNo for editing
       name: employee.name,
       position: employee.position,
       overtimeHours: employee.overtimeHours,
@@ -233,6 +238,11 @@ const OvertimeManagement = () => {
 
   return (
     <div className="bg-[#F0F0F0] p-6">
+       <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+      >
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
@@ -259,6 +269,7 @@ const OvertimeManagement = () => {
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
               Employee's Name
@@ -483,6 +494,17 @@ const OvertimeManagement = () => {
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
+                <label className="font-bold">Employee No.</label>
+                <input
+                  type="text"
+                  name="employeeNo"
+                  value={formData.employeeNo}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded p-2 w-full"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
                 <label className="font-bold">Employee's Name</label>
                 <input
                   type="text"
@@ -607,8 +629,9 @@ const OvertimeManagement = () => {
       </Modal>
 
       <footer className="bg-white mt-36 p-4 rounded-md shadow-md">
-        <p>2024 Hospital Management System. All Rights Reserved.</p>
+      <p>&copy; {new Date().getFullYear()} Nodado General Hospital. All rights reserved.</p>
       </footer>
+      </motion.div>
     </div>
   );
 };
