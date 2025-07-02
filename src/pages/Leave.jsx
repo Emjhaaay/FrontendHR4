@@ -92,7 +92,7 @@ const Leave = () => {
   useEffect(() => {
     const fetchLeaves = async () => {
       try {
-        const response = await axios.get("http://localhost:8059/leaves");
+        const response = await axios.get("https://newbackendhr4.vercel.app/leaves");
         setLeaves(response.data);
         setFilteredLeaves(response.data);
       } catch (error) {
@@ -202,7 +202,7 @@ const Leave = () => {
 
     try {
       if (editingId) {
-        await axios.put(`http://localhost:8059/leaves/${editingId}`, formData, {
+        await axios.put(`https://newbackendhr4.vercel.app/leaves/${editingId}`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -224,7 +224,7 @@ const Leave = () => {
         setEditingId(null);
       } else {
         const response = await axios.post(
-          "http://localhost:8059/leaves",
+          "https://newbackendhr4.vercel.app/leaves",
           formData,
           {
             headers: {
@@ -268,7 +268,7 @@ const Leave = () => {
   const handleDelete = async () => {
     if (!selectedLeave) return;
     try {
-      await axios.delete(`http://localhost:8059/leaves/${selectedLeave}`);
+      await axios.delete(`https://newbackendhr4.vercel.app/leaves/${selectedLeave}`);
       setLeaves(leaves.filter((leave) => leave._id !== selectedLeave));
       setFilteredLeaves(
         filteredLeaves.filter((leave) => leave._id !== selectedLeave)
@@ -312,7 +312,7 @@ const Leave = () => {
 
   const handleOpenImageModal = (attachment) => {
     if (attachment) {
-      const imageUrl = `http://localhost:8059/uploads/${attachment}`; // Construct the image URL
+      const imageUrl = `https://newbackendhr4.vercel.app/uploads/${attachment}`; // Construct the image URL
       setImageSrc(imageUrl); // Set the image source
       setOpenImageModal(true); // Open the image modal
     } else {

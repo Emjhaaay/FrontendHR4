@@ -503,7 +503,7 @@ const Benefits = () => {
 
   const fetchBenefits = async () => {
     try {
-      const response = await axios.get("http://localhost:8059/benefits");
+      const response = await axios.get("https://newbackendhr4.vercel.app/benefits");
       setBenefits(response.data);
     } catch (error) {
       console.error("Error fetching benefits:", error);
@@ -537,7 +537,7 @@ const Benefits = () => {
     if (editIndex !== null) {
       try {
         await axios.put(
-          `http://localhost:8059/benefits/${benefits[editIndex]._id}`,
+          `https://newbackendhr4.vercel.app/benefits/${benefits[editIndex]._id}`,
           benefitData
         );
         const updatedBenefits = [...benefits];
@@ -557,7 +557,7 @@ const Benefits = () => {
     } else {
       try {
         const response = await axios.post(
-          "http://localhost:8059/benefits",
+          "https://newbackendhr4.vercel.app/benefits",
           benefitData
         );
         setBenefits([...benefits, response.data]);
@@ -626,7 +626,7 @@ const Benefits = () => {
     if (deleteIndex !== null) {
       try {
         await axios.delete(
-          `http://localhost:8059/benefits/${benefits[deleteIndex]._id}`
+          `https://newbackendhr4.vercel.app/benefits/${benefits[deleteIndex]._id}`
         );
         const updatedBenefits = benefits.filter((_, i) => i !== deleteIndex);
         setBenefits(updatedBenefits);

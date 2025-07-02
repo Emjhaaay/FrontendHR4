@@ -100,7 +100,7 @@ const OvertimeManagement = () => {
 
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get("http://localhost:8059/overtimes");
+      const response = await axios.get("https://newbackendhr4.vercel.app/overtimes");
       setEmployees(response.data);
     } catch (err) {
       console.error("Error fetching employees:", err);
@@ -128,7 +128,7 @@ const OvertimeManagement = () => {
     try {
       if (isEditing) {
         await axios.put(
-          `http://localhost:8059/overtimes/${employees[currentIndex]._id}`,
+          `https://newbackendhr4.vercel.app/overtimes/${employees[currentIndex]._id}`,
           {
             employeeNo, // Include employeeNo in the update
             name,
@@ -142,7 +142,7 @@ const OvertimeManagement = () => {
           type: "success",
         });
       } else {
-        await axios.post("http://localhost:8059/overtimes", {
+        await axios.post("https://newbackendhr4.vercel.app/overtimes", {
           employeeNo, // Include employeeNo in the new employee
           name,
           position,
@@ -198,7 +198,7 @@ const OvertimeManagement = () => {
   const handleDelete = async () => {
     try {
       await axios.delete(
-        `http://localhost:8059/overtimes/${selectedEmployeeId}`
+        `https://newbackendhr4.vercel.app/overtimes/${selectedEmployeeId}`
       );
       fetchEmployees();
       setNotification({

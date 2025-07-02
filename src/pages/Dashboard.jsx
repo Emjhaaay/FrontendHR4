@@ -69,7 +69,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchShiftCounts = async () => {
       try {
-        const response = await fetch("http://localhost:8059/shifts");
+        const response = await fetch("https://newbackendhr4.vercel.app/shifts");
         const data = await response.json();
         const counts = data.reduce((acc, shift) => {
           const { shiftType } = shift;
@@ -99,7 +99,7 @@ const Dashboard = () => {
 
     const fetchOvertimeData = async () => {
       try {
-        const response = await fetch("http://localhost:8059/overtimes");
+        const response = await fetch("https://newbackendhr4.vercel.app/overtimes");
         const data = await response.json();
 
         const sortedData = data
@@ -126,7 +126,7 @@ const Dashboard = () => {
 
     const fetchPredictedOvertimeData = async () => {
       try {
-        const response = await fetch("http://localhost:8059/overtimes");
+        const response = await fetch("https://newbackendhr4.vercel.app/overtimes");
         const data = await response.json();
         const sortedData = data
           .sort((a, b) => b.overtimeHours - a.overtimeHours)
@@ -148,7 +148,7 @@ const Dashboard = () => {
 
     const fetchPredictedSalaryData = async () => {
       try {
-        const response = await fetch("http://localhost:8059/overtimes");
+        const response = await fetch("https://newbackendhr4.vercel.app/overtimes");
         const data = await response.json();
         const sortedData = data
           .sort((a, b) => b.totalSalary - a.totalSalary)
@@ -170,7 +170,7 @@ const Dashboard = () => {
 
     const fetchBenefitsData = async () => {
       try {
-        const response = await fetch("http://localhost:8059/benefits");
+        const response = await fetch("https://newbackendhr4.vercel.app/benefits");
         const data = await response.json();
 
         const counts = [
@@ -203,7 +203,7 @@ const Dashboard = () => {
 
     const fetchIncentivesData = async () => {
       try {
-        const response = await fetch("http://localhost:8059/incentives");
+        const response = await fetch("https://newbackendhr4.vercel.app/incentives");
         const data = await response.json();
 
         const eligibleEmployeesList = data.filter(

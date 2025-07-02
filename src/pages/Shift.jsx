@@ -95,7 +95,7 @@ const Shift = () => {
   useEffect(() => {
     const fetchShifts = async () => {
       try {
-        const response = await axios.get("http://localhost:8059/shifts");
+        const response = await axios.get("https://newbackendhr4.vercel.app/shifts");
         setShifts(response.data);
       } catch (error) {
         console.error("Error fetching shifts:", error);
@@ -131,7 +131,7 @@ const Shift = () => {
 
     try {
       if (editIndex !== null) {
-        await axios.put(`http://localhost:8059/shifts/${editId}`, newShift);
+        await axios.put(`https://newbackendhr4.vercel.app/shifts/${editId}`, newShift);
         const updatedShifts = shifts.map((shift, index) =>
           index === editIndex ? { ...shift, ...newShift } : shift
         );
@@ -141,7 +141,7 @@ const Shift = () => {
         setOpenEditModal(false); // Close the modal after successful update
       } else {
         const response = await axios.post(
-          "http://localhost:8059/shifts",
+          "https://newbackendhr4.vercel.app/shifts",
           newShift
         );
         console.log("Shift added successfully:", response.data); // Debugging log
@@ -193,7 +193,7 @@ const Shift = () => {
   const handleDelete = async () => {
     const shiftToDelete = shifts[deleteIndex];
     try {
-      await axios.delete(`http://localhost:8059/shifts/${shiftToDelete._id}`);
+      await axios.delete(`https://newbackendhr4.vercel.app/shifts/${shiftToDelete._id}`);
       const updatedShifts = shifts.filter((_, i) => i !== deleteIndex);
       setShifts(updatedShifts);
       showNotification("success", "Employee's Shift deleted successfully!");
