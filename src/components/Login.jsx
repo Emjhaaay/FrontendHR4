@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaEye, FaEyeSlash, FaArrowLeft } from "react-icons/fa";
 import { CircularProgress } from '@mui/material';
@@ -9,9 +9,10 @@ function Login({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [verifyingCredentials, setVerifyingCredentials] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,11 +23,18 @@ function Login({ onLogin }) {
       setPassword(storedPassword || "");
       setRememberMe(true);
     }
+    
+    // Simulate page loading (remove timeout in production)
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setVerifyingCredentials(true);
     setErrorMessage("");
 
     try {
@@ -58,7 +66,7 @@ function Login({ onLogin }) {
         "An error occurred. Please try again later."
       );
     } finally {
-      setLoading(false);
+      setVerifyingCredentials(false);
     }
   };
 
@@ -70,9 +78,38 @@ function Login({ onLogin }) {
     navigate("/");
   };
 
+  // Full page preloader (initial load)
+  if (pageLoading) {
+    return (
+      <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div className="flex flex-col items-center">
+          <img 
+            src={Nodado} 
+            alt="Loading" 
+            className="h-20 w-20 mb-4 animate-pulse" 
+          />
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#090367] mb-4"></div>
+          <p className="text-gray-600">Loading application...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-50 p-4">
-      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md mx-auto border border-gray-100">
+      {/* Credential verification overlay */}
+      {verifyingCredentials && (
+        <div className="fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center z-40">
+          <div className="flex flex-col items-center bg-white p-8 rounded-xl shadow-xl border border-gray-200">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#090367] mb-4"></div>
+            <h3 className="text-lg font-medium text-gray-800">Authenticating</h3>
+            <p className="text-gray-600 mt-2">Please wait while we verify your credentials</p>
+          </div>
+        </div>
+      )}
+
+      {/* Login Form */}
+      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md mx-auto border border-gray-100 relative">
         {/* Back button (top-left corner) */}
         <button
           onClick={handleBackToLanding}
@@ -165,12 +202,12 @@ function Login({ onLogin }) {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={verifyingCredentials}
             className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-colors ${
-              loading ? 'bg-[#090367]' : 'bg-[#090367] hover:bg-[#090367]'
+              verifyingCredentials ? 'bg-blue-400' : 'bg-[#090367] hover:bg-[#090367]'
             } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center`}
           >
-            {loading ? (
+            {verifyingCredentials ? (
               <>
                 <CircularProgress size={20} color="inherit" className="mr-2" />
                 Signing in...
